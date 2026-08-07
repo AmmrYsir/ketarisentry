@@ -100,10 +100,10 @@ export interface AuthUser {
   id: string;
   name: string;
   email: string;
-  avatar: string;
-  domain?: string;
+  avatar?: string;
   role: UserRole;
-  is_sandbox: boolean;
+  email_verified?: boolean;
+  is_sandbox?: boolean;
 }
 
 export interface AuditLogEntry {

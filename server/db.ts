@@ -27,7 +27,7 @@ const db = new Database(dbPath, { create: true });
 db.exec('PRAGMA journal_mode = WAL;');
 
 // Initialize tables
-export function initializeSchema(): void {
+export async function initializeSchema(): Promise<void> {
   db.exec(`
     CREATE TABLE IF NOT EXISTS services (
       id TEXT PRIMARY KEY,
@@ -47,8 +47,10 @@ export function initializeSchema(): void {
       id TEXT PRIMARY KEY,
       name TEXT NOT NULL,
       email TEXT NOT NULL UNIQUE,
+      password_hash TEXT,
       avatar TEXT,
       role TEXT NOT NULL,
+      email_verified INTEGER DEFAULT 1,
       is_sandbox INTEGER DEFAULT 0,
       last_login_at TEXT NOT NULL
     );
@@ -89,11 +91,31 @@ export function initializeSchema(): void {
     );
   `);
 
+  // Seed default superadmin account if users table is empty or superadmin does not exist
+  const existingSuperadmin = db.query('SELECT id FROM users WHERE LOWER(email) = LOWER(?)').get('superadmin@ketarisentry.io');
+  if (!existingSuperadmin) {
+    const defaultPasswordHash = await Bun.password.hash('superadminpassword');
+    db.prepare(`
+      INSERT OR IGNORE INTO users (id, name, email, password_hash, avatar, role, email_verified, is_sandbox, last_login_at)
+      VALUES ($id, $name, $email, $password_hash, $avatar, $role, $email_verified, $is_sandbox, $last_login_at)
+    `).run({
+      $id: 'usr_superadmin_1',
+      $name: 'System Superadmin',
+      $email: 'superadmin@ketarisentry.io',
+      $password_hash: defaultPasswordHash,
+      $avatar: 'https://api.dicebear.com/7.x/bottts/svg?seed=Superadmin',
+      $role: 'admin',
+      $email_verified: 1,
+      $is_sandbox: 0,
+      $last_login_at: new Date().toISOString(),
+    });
+  }
+
   addAuditLog({
     user_id: 'system',
     user_name: 'Database Initializer',
     action: 'INIT_DATABASE',
-    details: 'Database schema initialized successfully',
+    details: 'Database schema initialized & superadmin account seeded (superadmin@ketarisentry.io)',
     timestamp: new Date().toISOString(),
   });
 }
@@ -226,7 +248,43 @@ export function getRecentPollLogs(serviceId: string, limit = 10): any[] {
   return query.all(serviceId, limit);
 }
 
-// User queries
+// User & Auth queries
+export function findUserByEmail(email: string): (AuthUser & { password_hash?: string }) | null {
+  const row = db.query('SELECT * FROM users WHERE LOWER(email) = LOWER(?)').get(email) as any;
+  if (!row) return null;
+  return {
+    id: row.id,
+    name: row.name,
+    email: row.email,
+    password_hash: row.password_hash,
+    avatar: row.avatar || undefined,
+    role: row.role,
+    email_verified: Boolean(row.email_verified),
+    is_sandbox: Boolean(row.is_sandbox),
+  };
+}
+
+export async function authenticateUserWithPassword(email: string, password: string): Promise<AuthUser | null> {
+  const user = findUserByEmail(email);
+  if (!user || !user.password_hash) return null;
+
+  const isMatch = await Bun.password.verify(password, user.password_hash);
+  if (!isMatch) return null;
+
+  // Update last login timestamp
+  db.prepare('UPDATE users SET last_login_at = ? WHERE id = ?').run(new Date().toISOString(), user.id);
+
+  return {
+    id: user.id,
+    name: user.name,
+    email: user.email,
+    avatar: user.avatar,
+    role: user.role,
+    email_verified: user.email_verified,
+    is_sandbox: user.is_sandbox,
+  };
+}
+
 export function upsertUser(user: AuthUser): void {
   db.prepare(`
     INSERT INTO users (id, name, email, avatar, role, is_sandbox, last_login_at)
@@ -241,7 +299,7 @@ export function upsertUser(user: AuthUser): void {
     $id: user.id,
     $name: user.name,
     $email: user.email,
-    $avatar: user.avatar,
+    $avatar: user.avatar || null,
     $role: user.role,
     $is_sandbox: user.is_sandbox ? 1 : 0,
     $last_login_at: new Date().toISOString(),

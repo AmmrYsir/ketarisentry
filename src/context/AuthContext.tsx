@@ -9,11 +9,11 @@ interface AuthContextType {
   isLoginModalOpen: boolean;
   isSandboxAllowed: boolean;
   isProduction: boolean;
-  googleClientId: string | null;
   openLoginModal: () => void;
   closeLoginModal: () => void;
   loginWithSandbox: (role?: UserRole) => void;
-  loginWithGoogleToken: (credentialResponse: any) => void;
+  loginWithPassword: (email: string, password: string) => Promise<{ success: boolean; error?: string }>;
+  loginWithMagicLink: (email: string) => Promise<{ success: boolean; error?: string }>;
   logout: () => void;
   setUserRole: (role: UserRole) => void;
 }
@@ -26,9 +26,7 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
   const [user, setUser] = useState<AuthUser | null>(null);
   const [isLoginModalOpen, setIsLoginModalOpen] = useState<boolean>(false);
 
-  const googleClientId = import.meta.env.VITE_GOOGLE_CLIENT_ID || null;
-
-  // Determine environment mode from standard VITE_APP_ENV or Vite MODE
+  // Determine environment mode from VITE_APP_ENV or Vite MODE
   const envMode = (
     import.meta.env.VITE_APP_ENV ||
     import.meta.env.MODE ||
@@ -54,11 +52,12 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
     }
 
     const demoUser: AuthUser = {
-      id: 'usr_sandbox_99',
-      name: 'System Admin',
-      email: 'admin@ketarisentry.io',
-      avatar: 'https://api.dicebear.com/7.x/bottts/svg?seed=Admin',
+      id: 'usr_sandbox_superadmin',
+      name: 'System Superadmin',
+      email: 'superadmin@ketarisentry.io',
+      avatar: 'https://api.dicebear.com/7.x/bottts/svg?seed=Superadmin',
       role,
+      email_verified: true,
       is_sandbox: true,
     };
     saveUserToState(demoUser);
@@ -89,52 +88,58 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
     }
   }, [isSandboxAllowed]);
 
-  const loginWithGoogleToken = (credentialResponse: any) => {
-    let email = 'user@google.com';
-    let name = 'Google User';
-    let avatar = 'https://lh3.googleusercontent.com/a/default-user';
-
+  const loginWithPassword = async (email: string, password: string): Promise<{ success: boolean; error?: string }> => {
     try {
-      if (credentialResponse?.credential) {
-        const base64Url = credentialResponse.credential.split('.')[1];
-        const base64 = base64Url.replace(/-/g, '+').replace(/_/g, '/');
-        const jsonPayload = decodeURIComponent(
-          atob(base64)
-            .split('')
-            .map((c) => '%' + ('00' + c.charCodeAt(0).toString(16)).slice(-2))
-            .join('')
-        );
-        const payload = JSON.parse(jsonPayload);
-        email = payload.email || email;
-        name = payload.name || name;
-        avatar = payload.picture || avatar;
+      const res = await fetch('/api/auth/login', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ email, password }),
+      });
+
+      const text = await res.text();
+      let data: any = {};
+      try {
+        data = text ? JSON.parse(text) : {};
+      } catch {
+        // Non-JSON body
       }
-    } catch {
-      // Fallback
-    }
 
-    const domain = email.split('@')[1];
-    const allowedDomainsStr = import.meta.env.VITE_ALLOWED_DOMAINS || '';
-    if (allowedDomainsStr) {
-      const allowedDomains = allowedDomainsStr.split(',').map((d: string) => d.trim().toLowerCase());
-      if (domain && !allowedDomains.includes(domain.toLowerCase())) {
-        alert(`Access denied. Login is restricted to domains: ${allowedDomainsStr}`);
-        return;
+      if (res.ok && data.user) {
+        saveUserToState(data.user);
+        setIsLoginModalOpen(false);
+        return { success: true };
       }
+      return { success: false, error: data.error || `HTTP ${res.status}: ${res.statusText || 'Authentication failed'}` };
+    } catch (err: any) {
+      return { success: false, error: err?.message || 'Network error / API server unreachable' };
     }
+  };
 
-    const googleUser: AuthUser = {
-      id: `usr_g_${Date.now()}`,
-      name,
-      email,
-      avatar,
-      domain,
-      role: 'admin',
-      is_sandbox: false,
-    };
+  const loginWithMagicLink = async (email: string): Promise<{ success: boolean; error?: string }> => {
+    try {
+      const res = await fetch('/api/auth/magic-link', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ email }),
+      });
 
-    saveUserToState(googleUser);
-    setIsLoginModalOpen(false);
+      const text = await res.text();
+      let data: any = {};
+      try {
+        data = text ? JSON.parse(text) : {};
+      } catch {
+        // Non-JSON body
+      }
+
+      if (res.ok && data.user) {
+        saveUserToState(data.user);
+        setIsLoginModalOpen(false);
+        return { success: true };
+      }
+      return { success: false, error: data.error || `HTTP ${res.status}: ${res.statusText || 'Magic link authorization failed'}` };
+    } catch (err: any) {
+      return { success: false, error: err?.message || 'Network error / API server unreachable' };
+    }
   };
 
   const logout = () => {
@@ -157,11 +162,11 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
         isLoginModalOpen,
         isSandboxAllowed,
         isProduction,
-        googleClientId,
         openLoginModal: () => setIsLoginModalOpen(true),
         closeLoginModal: () => setIsLoginModalOpen(false),
         loginWithSandbox,
-        loginWithGoogleToken,
+        loginWithPassword,
+        loginWithMagicLink,
         logout,
         setUserRole,
       }}

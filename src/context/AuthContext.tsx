@@ -1,6 +1,7 @@
 import React, { createContext, useContext, useState, useEffect } from 'react';
 import type { ReactNode } from 'react';
 import type { AuthUser, UserRole } from '../types';
+import { syncUserLoginWithApi } from '../services/apiClient';
 
 interface AuthContextType {
   user: AuthUser | null;
@@ -43,6 +44,7 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
     setUser(newUser);
     if (newUser) {
       localStorage.setItem(LOCAL_STORAGE_KEY, JSON.stringify(newUser));
+      syncUserLoginWithApi(newUser);
     } else {
       localStorage.removeItem(LOCAL_STORAGE_KEY);
     }

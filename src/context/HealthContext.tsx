@@ -2,6 +2,7 @@ import React, { createContext, useContext, useState, useEffect, useCallback } fr
 import type { ReactNode } from 'react';
 import type { ServiceConfig, PollResult, Incident, ServiceWithStatus } from '../types';
 import { INITIAL_SERVICES, executePullPoll } from '../services/pollingEngine';
+import { fetchServicesFromApi, saveServiceToApi, deleteServiceFromApi, pollServiceViaApi } from '../services/apiClient';
 
 interface HealthContextType {
   services: ServiceConfig[];
@@ -49,6 +50,16 @@ export const HealthProvider: React.FC<{ children: ReactNode }> = ({ children }) 
   const [isAddModalOpen, setIsAddModalOpen] = useState<boolean>(false);
   const [editingService, setEditingService] = useState<ServiceConfig | null>(null);
 
+  // Sync services from SQLite backend API on mount
+  useEffect(() => {
+    fetchServicesFromApi().then((apiServices) => {
+      if (apiServices && apiServices.length > 0) {
+        setServices(apiServices);
+        localStorage.setItem(LOCAL_STORAGE_SERVICES_KEY, JSON.stringify(apiServices));
+      }
+    });
+  }, []);
+
   const saveServicesToStorage = (newServices: ServiceConfig[]) => {
     setServices(newServices);
     localStorage.setItem(LOCAL_STORAGE_SERVICES_KEY, JSON.stringify(newServices));
@@ -58,23 +69,27 @@ export const HealthProvider: React.FC<{ children: ReactNode }> = ({ children }) 
     const targetConfig = services.find((s) => s.id === serviceId);
     if (!targetConfig) return;
 
-    const res = await executePullPoll(targetConfig);
+    // Try polling via SQLite API server first (logs to DB), fallback to client execution
+    let res = await pollServiceViaApi(targetConfig);
+    if (!res) {
+      res = await executePullPoll(targetConfig);
+    }
 
     setResults((prev) => {
       const prevRes = prev[serviceId];
-      if (prevRes && prevRes.status !== res.status) {
+      if (prevRes && prevRes.status !== res!.status) {
         const incident: Incident = {
           id: `inc_${Date.now()}_${Math.random().toString(36).substring(2, 6)}`,
           service_id: targetConfig.id,
           service_name: targetConfig.name,
           previous_status: prevRes.status,
-          new_status: res.status,
-          reason: res.error_message || `State transitioned to ${res.status.toUpperCase()}`,
+          new_status: res!.status,
+          reason: res!.error_message || `State transitioned to ${res!.status.toUpperCase()}`,
           timestamp: new Date().toLocaleTimeString(),
         };
         setIncidents((incPrev) => [incident, ...incPrev.slice(0, 49)]);
       }
-      return { ...prev, [serviceId]: res };
+      return { ...prev, [serviceId]: res! };
     });
   }, [services]);
 
@@ -102,7 +117,10 @@ export const HealthProvider: React.FC<{ children: ReactNode }> = ({ children }) 
   const toggleMuteService = (serviceId: string) => {
     const updated = services.map((s) => {
       if (s.id === serviceId) {
-        return { ...s, muted: !s.muted };
+        const newMuted = !s.muted;
+        const updatedConfig = { ...s, muted: newMuted };
+        saveServiceToApi(updatedConfig);
+        return updatedConfig;
       }
       return s;
     });
@@ -111,17 +129,27 @@ export const HealthProvider: React.FC<{ children: ReactNode }> = ({ children }) 
   };
 
   const saveService = (data: Omit<ServiceConfig, 'id' | 'created_at'> & { id?: string }) => {
+    let serviceToSave: ServiceConfig;
     if (data.id) {
-      const updated = services.map((s) => (s.id === data.id ? { ...s, ...data } : s));
+      serviceToSave = {
+        ...data,
+        id: data.id,
+        created_at: services.find((s) => s.id === data.id)?.created_at || new Date().toISOString(),
+      } as ServiceConfig;
+      const updated = services.map((s) => (s.id === data.id ? serviceToSave : s));
       saveServicesToStorage(updated);
     } else {
-      const newService: ServiceConfig = {
+      serviceToSave = {
         ...data,
         id: `srv-${Date.now()}`,
         created_at: new Date().toISOString(),
       };
-      saveServicesToStorage([...services, newService]);
+      saveServicesToStorage([...services, serviceToSave]);
     }
+
+    // Persist in SQLite
+    saveServiceToApi(serviceToSave);
+
     setIsAddModalOpen(false);
     setEditingService(null);
     triggerPollAll();
@@ -130,6 +158,8 @@ export const HealthProvider: React.FC<{ children: ReactNode }> = ({ children }) 
   const deleteService = (serviceId: string) => {
     const updated = services.filter((s) => s.id !== serviceId);
     saveServicesToStorage(updated);
+    deleteServiceFromApi(serviceId);
+
     setResults((prev) => {
       const copy = { ...prev };
       delete copy[serviceId];
@@ -170,6 +200,7 @@ export const HealthProvider: React.FC<{ children: ReactNode }> = ({ children }) 
       const parsed = JSON.parse(jsonString);
       if (Array.isArray(parsed) && parsed.length > 0 && parsed[0].url) {
         saveServicesToStorage(parsed);
+        parsed.forEach((s) => saveServiceToApi(s));
         triggerPollAll();
         return true;
       }

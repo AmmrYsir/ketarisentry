@@ -8,6 +8,8 @@ Built with **Bun + Vite + React 19 + TypeScript + React Compiler**, KetariSentry
 
 ## ⚡ Features
 
+- 🗄️ **Native Bun + SQLite Database**: Permanent telemetry log storage (`ketarisentry.db`), failed job exception archives, and user profiles powered by `bun:sqlite`.
+- 📋 **Security & Configuration Audit Logs**: Chronological audit trail tracking all service registrations, updates, muting, deletions, and user login events.
 - 🎯 **Automated Pull Polling**: Periodically probes HTTP `/healthz` endpoints with custom polling intervals (15s - 300s) and timeout management.
 - 🐘 **Laravel Queue & Horizon Telemetry**: Deep visibility into Redis queue backlogs, pending job counts, active Horizon workers, and failed job stack traces.
 - 🔐 **Google OAuth Login**: Built-in "Sign in with Google" authentication with domain restriction support, paired with a Sandbox Demo mode.
@@ -225,7 +227,8 @@ Route::get('/ketari/health', KetariHealthController::class);
 ## 🛠️ Scripts & Tooling
 
 ```bash
-bun dev        # Start local dev server
+bun dev        # Start local Vite dev server (port 5173 with /api proxy)
+bun run server # Start high-performance Bun + SQLite API server (port 3001)
 bun run build  # Build production bundle with React Compiler
 bun run lint   # Run oxlint checks
 bun preview    # Preview production build locally

@@ -6,6 +6,7 @@ import { ServiceCard } from './components/ServiceCard';
 import { ServiceModal } from './components/ServiceModal';
 import { LoginModal } from './components/LoginModal';
 import { QueueInspectorModal } from './components/QueueInspectorModal';
+import { AuditLogModal } from './components/AuditLogModal';
 import { IncidentTimeline } from './components/IncidentTimeline';
 import { 
   Search, 
@@ -25,6 +26,7 @@ const DashboardContent: React.FC = () => {
   const [searchQuery, setSearchQuery] = useState('');
   const [selectedEnv, setSelectedEnv] = useState<string>('all');
   const [selectedStatus, setSelectedStatus] = useState<string>('all');
+  const [isAuditModalOpen, setIsAuditModalOpen] = useState(false);
 
   // Compute fleet wide metrics
   const totalServices = services.length;
@@ -66,7 +68,7 @@ const DashboardContent: React.FC = () => {
 
   return (
     <div className="min-h-screen bg-[#0b0f19] text-slate-100 flex flex-col selection:bg-emerald-500 selection:text-slate-900 font-sans">
-      <Header />
+      <Header onOpenAuditLog={() => setIsAuditModalOpen(true)} />
 
       <main className="flex-1 max-w-7xl w-full mx-auto px-4 sm:px-6 lg:px-8 py-8 space-y-8">
         
@@ -223,6 +225,7 @@ const DashboardContent: React.FC = () => {
       <ServiceModal />
       <LoginModal />
       <QueueInspectorModal />
+      <AuditLogModal isOpen={isAuditModalOpen} onClose={() => setIsAuditModalOpen(false)} />
     </div>
   );
 };

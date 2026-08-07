@@ -82,3 +82,12 @@ export interface AuthUser {
   role: UserRole;
   is_sandbox: boolean;
 }
+
+export interface AuditLogEntry {
+  id: string;
+  user_id: string;
+  user_name: string;
+  action: string;
+  details: string;
+  timestamp: string;
+}

@@ -11,13 +11,18 @@ import {
   CheckCircle2,
   AlertTriangle,
   XCircle,
-  Clock
+  Clock,
+  FileText
 } from 'lucide-react';
 import { useAuth } from '../context/AuthContext';
 import { useHealth } from '../context/HealthContext';
 import type { UserRole } from '../types';
 
-export const Header: React.FC = () => {
+interface HeaderProps {
+  onOpenAuditLog?: () => void;
+}
+
+export const Header: React.FC<HeaderProps> = ({ onOpenAuditLog }) => {
   const { user, isAuthenticated, openLoginModal, logout, setUserRole } = useAuth();
   const { 
     services, 
@@ -147,6 +152,17 @@ export const Header: React.FC = () => {
             >
               <Plus className="w-4 h-4" />
               <span>Add Service</span>
+            </button>
+          )}
+
+          {/* Audit Logs Button */}
+          {onOpenAuditLog && (
+            <button
+              onClick={onOpenAuditLog}
+              className="p-2.5 rounded-xl bg-slate-800 text-slate-300 hover:text-white hover:bg-slate-700 active:scale-95 transition-all border border-slate-700/60"
+              title="View SQLite Audit Logs"
+            >
+              <FileText className="w-4 h-4 text-indigo-400" />
             </button>
           )}
 

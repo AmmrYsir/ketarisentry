@@ -286,24 +286,38 @@ export async function authenticateUserWithPassword(email: string, password: stri
 }
 
 export function upsertUser(user: AuthUser): void {
-  db.prepare(`
-    INSERT INTO users (id, name, email, avatar, role, is_sandbox, last_login_at)
-    VALUES ($id, $name, $email, $avatar, $role, $is_sandbox, $last_login_at)
-    ON CONFLICT(id) DO UPDATE SET
-      name = excluded.name,
-      email = excluded.email,
-      avatar = excluded.avatar,
-      role = excluded.role,
-      last_login_at = excluded.last_login_at
-  `).run({
-    $id: user.id,
-    $name: user.name,
-    $email: user.email,
-    $avatar: user.avatar || null,
-    $role: user.role,
-    $is_sandbox: user.is_sandbox ? 1 : 0,
-    $last_login_at: new Date().toISOString(),
-  });
+  const existingUser = findUserByEmail(user.email);
+  if (existingUser) {
+    db.prepare(`
+      UPDATE users SET
+        name = $name,
+        avatar = $avatar,
+        role = $role,
+        is_sandbox = $is_sandbox,
+        last_login_at = $last_login_at
+      WHERE LOWER(email) = LOWER($email)
+    `).run({
+      $name: user.name,
+      $avatar: user.avatar || null,
+      $role: user.role,
+      $is_sandbox: user.is_sandbox ? 1 : 0,
+      $last_login_at: new Date().toISOString(),
+      $email: user.email,
+    });
+  } else {
+    db.prepare(`
+      INSERT INTO users (id, name, email, avatar, role, is_sandbox, last_login_at)
+      VALUES ($id, $name, $email, $avatar, $role, $is_sandbox, $last_login_at)
+    `).run({
+      $id: user.id,
+      $name: user.name,
+      $email: user.email,
+      $avatar: user.avatar || null,
+      $role: user.role,
+      $is_sandbox: user.is_sandbox ? 1 : 0,
+      $last_login_at: new Date().toISOString(),
+    });
+  }
 }
 
 // Audit Log queries

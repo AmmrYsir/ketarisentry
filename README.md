@@ -2,18 +2,18 @@
 
 **Ketarisentry** is a modern, minimalist, central health & queue monitoring hub built for multi-tenant service infrastructure with first-class support for **Laravel applications**.
 
-Built with **Bun + Vite + React 19 + TypeScript + React Compiler**, Ketarisentry offers real-time pull polling, queue job failure inspection, SSL cert expiry tracking, Google OAuth authentication, and a clean **Claymorphic UI** design system.
+Built with **Bun + Vite + React 19 + TypeScript + React Compiler**, Ketarisentry offers real-time pull polling, queue job failure inspection, SSL cert expiry tracking, Email/Password & Magic Link authentication, and a clean **Claymorphic UI** design system.
 
 ---
 
 ## ⚡ Features
 
 - 🗄️ **Native Bun + SQLite Database**: Permanent telemetry log storage (`ketarisentry.db`), failed job exception archives, and user profiles powered by `bun:sqlite`.
+- 🔐 **Email & Password + Magic Link Authentication**: Native password hashing using `Bun.password.hash` & `Bun.password.verify`, alongside Magic Link authorization for verified accounts.
 - 📋 **Security & Configuration Audit Logs**: Chronological audit trail tracking all service registrations, updates, muting, deletions, and user login events.
 - 🎯 **Automated Pull Polling**: Periodically probes HTTP `/healthz` endpoints with custom polling intervals (15s - 300s) and timeout management.
 - 🐘 **Laravel Queue & Horizon Telemetry**: Deep visibility into Redis queue backlogs, pending job counts, active Horizon workers, and failed job stack traces.
 - 📖 **Dedicated Laravel Integration Guide**: Step-by-step guide in [LARAVEL_INTEGRATION.md](file:///c:/Users/ammar/Desktop/ketarisentry/LARAVEL_INTEGRATION.md) for quick copy-paste setup.
-- 🔐 **Google OAuth Login**: Built-in "Sign in with Google" authentication with domain restriction support, paired with a Sandbox Demo mode.
 - 🛡️ **SSL Certificate Expiry Checker**: Real-time SSL validity tracking with automated warnings when certificates expire in `< 14 days`.
 - 🎨 **Minimalist Claymorphic UI**: High-contrast, tactile design system with soft drop-shadows, pill badges, and responsive layouts.
 - 🚨 **Incident & State Machine**: Fleet-wide status tracking (`Operational`, `Degraded`, `Outage`, `Maintenance`).
@@ -38,6 +38,9 @@ cd ketarisentry
 # Install dependencies with Bun
 bun install
 
+# Initialize SQLite Database & Seed Initial Superadmin Account
+bun run db:init
+
 # Start the Vite development server
 bun dev
 ```
@@ -46,21 +49,18 @@ Open [http://localhost:5173](http://localhost:5173) in your browser.
 
 ---
 
-## 🔑 Google OAuth Setup
+## 🔑 Authentication & Initial Superadmin
 
-Ketarisentry supports Google OAuth 2.0 authentication.
+Ketarisentry features native **Email + Password** and **Magic Link** authentication.
 
-1. Create a project in the **[Google Cloud Console](https://console.cloud.google.com/)**.
-2. Navigate to **APIs & Services > Credentials** and create an **OAuth 2.0 Client ID** (Web application).
-3. Add `http://localhost:5173` to **Authorized JavaScript Origins** and **Authorized Redirect URIs**.
-4. Create a `.env` file in the root directory:
+1. **Initial Seeded Account**:
+   - Running `bun run db:init` seeds the initial superadmin account into SQLite:
+     - **Email**: `superadmin@ketarisentry.io`
+     - **Role**: `admin`
+     - **Email Verified**: `1`
 
-```env
-VITE_GOOGLE_CLIENT_ID="your-google-client-id.apps.googleusercontent.com"
-VITE_ALLOWED_DOMAINS="company.com,tech.io" # Optional: restrict login to specific email domains
-```
-
-> **Note**: If `VITE_GOOGLE_CLIENT_ID` is not set, Ketarisentry automatically provides a **Sandbox Demo Sign-In** for instant offline testing.
+2. **Development Sandbox Demo**:
+   - In non-production environments (`VITE_APP_ENV="development"`), guest users can click **"Enter Sandbox as Superadmin"** for instant 1-click testing without credentials.
 
 ---
 
@@ -280,6 +280,7 @@ Route::get('/ketari/health', KetariHealthController::class);
 ```bash
 bun dev        # Start local Vite dev server (port 5173 with /api proxy)
 bun run server # Start high-performance Bun + SQLite API server (port 3001)
+bun run db:init # Initialize SQLite schema & seed initial superadmin account
 bun run build  # Build production bundle with React Compiler
 bun run lint   # Run oxlint checks
 bun preview    # Preview production build locally

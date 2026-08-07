@@ -94,7 +94,7 @@ export async function initializeSchema(): Promise<void> {
   // Seed default superadmin account if users table is empty or superadmin does not exist
   const existingSuperadmin = db.query('SELECT id FROM users WHERE LOWER(email) = LOWER(?)').get('superadmin@ketarisentry.io');
   if (!existingSuperadmin) {
-    const defaultPasswordHash = await Bun.password.hash('superadminpassword');
+    const defaultPasswordHash = await Bun.password.hash('admin');
     db.prepare(`
       INSERT OR IGNORE INTO users (id, name, email, password_hash, avatar, role, email_verified, is_sandbox, last_login_at)
       VALUES ($id, $name, $email, $password_hash, $avatar, $role, $email_verified, $is_sandbox, $last_login_at)

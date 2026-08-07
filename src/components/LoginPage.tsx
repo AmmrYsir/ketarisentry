@@ -183,7 +183,7 @@ export const LoginPage: React.FC = () => {
             </button>
 
             <div className="p-3 rounded-2xl bg-slate-950/60 border border-slate-800/80 text-[11px] text-slate-400 text-center font-mono space-y-1 select-none">
-              <div>Seeded Superadmin: <strong className="text-slate-200">superadmin@ketarisentry.io</strong></div>
+              <div>Superadmin: <strong className="text-slate-200">superadmin@ketarisentry.io</strong></div>
               <div>Password: <strong className="text-slate-200">superadminpassword</strong></div>
             </div>
           </form>

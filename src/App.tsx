@@ -1,6 +1,8 @@
 import React, { useState } from 'react';
-import { AuthProvider, useAuth } from './context/AuthContext';
-import { HealthProvider, useHealth } from './context/HealthContext';
+import { AuthProvider } from './context/AuthContext';
+import { HealthProvider } from './context/HealthContext';
+import { useAuth } from './hooks/useAuth';
+import { useHealth } from './hooks/useHealth';
 import { Header } from './components/Header';
 import { ServiceCard } from './components/ServiceCard';
 import { ServiceModal } from './components/ServiceModal';

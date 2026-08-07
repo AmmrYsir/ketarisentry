@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { X, Server } from 'lucide-react';
-import { useHealth } from '../context/HealthContext';
+import { useHealth } from '../hooks/useHealth';
 import { CustomSelect } from './CustomSelect';
 
 export const ServiceModal: React.FC = () => {

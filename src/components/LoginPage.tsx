@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { Shield, Lock, UserCheck, AlertCircle, Mail, KeyRound, Wand2, ArrowRight } from 'lucide-react';
-import { useAuth } from '../context/AuthContext';
+import { useAuth } from '../hooks/useAuth';
 
 export const LoginPage: React.FC = () => {
   const { 

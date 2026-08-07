@@ -1,24 +1,8 @@
-import React, { createContext, useContext, useState, useEffect, useCallback } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import type { ReactNode } from 'react';
 import type { AuthUser, UserRole } from '../types';
 import { syncUserLoginWithApi } from '../services/apiClient';
-
-interface AuthContextType {
-  user: AuthUser | null;
-  isAuthenticated: boolean;
-  isLoginModalOpen: boolean;
-  isSandboxAllowed: boolean;
-  isProduction: boolean;
-  openLoginModal: () => void;
-  closeLoginModal: () => void;
-  loginWithSandbox: (role?: UserRole) => void;
-  loginWithPassword: (email: string, password: string) => Promise<{ success: boolean; error?: string }>;
-  loginWithMagicLink: (email: string) => Promise<{ success: boolean; error?: string }>;
-  logout: () => void;
-  setUserRole: (role: UserRole) => void;
-}
-
-const AuthContext = createContext<AuthContextType | undefined>(undefined);
+import { AuthContext } from './AuthContextObject';
 
 const LOCAL_STORAGE_KEY = 'ketarisentry_auth_user';
 
@@ -174,12 +158,4 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
       {children}
     </AuthContext.Provider>
   );
-};
-
-export const useAuth = () => {
-  const context = useContext(AuthContext);
-  if (!context) {
-    throw new Error('useAuth must be used within an AuthProvider');
-  }
-  return context;
 };

@@ -13,8 +13,8 @@ import {
   Clock,
   FileText
 } from 'lucide-react';
-import { useAuth } from '../context/AuthContext';
-import { useHealth } from '../context/HealthContext';
+import { useAuth } from '../hooks/useAuth';
+import { useHealth } from '../hooks/useHealth';
 
 interface HeaderProps {
   onOpenAuditLog?: () => void;

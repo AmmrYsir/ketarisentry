@@ -1,6 +1,6 @@
 import React from 'react';
 import { Activity, Clock } from 'lucide-react';
-import { useHealth } from '../context/HealthContext';
+import { useHealth } from '../hooks/useHealth';
 
 export const IncidentTimeline: React.FC = () => {
   const { incidents } = useHealth();

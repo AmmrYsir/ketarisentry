@@ -1,210 +1,145 @@
-import React, { createContext, useContext, useState, useEffect, useCallback, useRef } from 'react';
+import React, { useState, useEffect, useCallback, useRef } from 'react';
 import type { ReactNode } from 'react';
-import type { ServiceConfig, PollResult, Incident, ServiceWithStatus } from '../types';
-import { INITIAL_SERVICES, executePullPoll } from '../services/pollingEngine';
-import { fetchServicesFromApi, saveServiceToApi, deleteServiceFromApi, pollServiceViaApi } from '../services/apiClient';
-
-interface HealthContextType {
-  services: ServiceConfig[];
-  results: Record<string, PollResult>;
-  incidents: Incident[];
-  isPollingActive: boolean;
-  selectedServiceForInspector: ServiceWithStatus | null;
-  isAddModalOpen: boolean;
-  editingService: ServiceConfig | null;
-  togglePolling: () => void;
-  triggerPollAll: () => Promise<void>;
-  triggerPollSingle: (serviceId: string) => Promise<void>;
-  toggleMuteService: (serviceId: string) => void;
-  toggleEnableService: (serviceId: string) => void;
-  openAddModal: (service?: ServiceConfig) => void;
-  closeAddModal: () => void;
-  saveService: (config: Omit<ServiceConfig, 'id' | 'created_at'> & { id?: string }) => void;
-  deleteService: (serviceId: string) => void;
-  openQueueInspector: (serviceWithStatus: ServiceWithStatus) => void;
-  closeQueueInspector: () => void;
-  exportConfigJson: () => void;
-  importConfigJson: (jsonString: string) => boolean;
-}
-
-const HealthContext = createContext<HealthContextType | undefined>(undefined);
+import type { ServiceConfig, PollResult, IncidentLog, ServiceWithStatus } from '../types';
+import { initialServices } from '../services/pollingEngine';
+import { 
+  fetchServicesFromApi, 
+  saveServiceToApi, 
+  deleteServiceFromApi, 
+  pollServiceViaApi 
+} from '../services/apiClient';
+import { executePullPoll } from '../services/pollingEngine';
+import { HealthContext } from './HealthContextObject';
 
 const LOCAL_STORAGE_SERVICES_KEY = 'ketarisentry_services';
 
 export const HealthProvider: React.FC<{ children: ReactNode }> = ({ children }) => {
   const [services, setServices] = useState<ServiceConfig[]>(() => {
-    const saved = localStorage.getItem(LOCAL_STORAGE_SERVICES_KEY);
-    if (saved) {
+    const localSaved = localStorage.getItem(LOCAL_STORAGE_SERVICES_KEY);
+    if (localSaved) {
       try {
-        return JSON.parse(saved);
+        return JSON.parse(localSaved);
       } catch {
         // Fallback
       }
     }
-    return INITIAL_SERVICES;
+    return initialServices;
   });
 
   const [results, setResults] = useState<Record<string, PollResult>>({});
-  const [incidents, setIncidents] = useState<Incident[]>([]);
+  const [incidents, setIncidents] = useState<IncidentLog[]>([]);
   const [isPollingActive, setIsPollingActive] = useState<boolean>(true);
-  const [selectedServiceForInspector, setSelectedServiceForInspector] = useState<ServiceWithStatus | null>(null);
   const [isAddModalOpen, setIsAddModalOpen] = useState<boolean>(false);
   const [editingService, setEditingService] = useState<ServiceConfig | null>(null);
+  const [selectedServiceForInspector, setSelectedServiceForInspector] = useState<ServiceWithStatus | null>(null);
 
-  // Track last polled timestamp per service to enforce strict poll_interval_sec intervals
-  const lastPolledMap = useRef<Record<string, number>>({});
-
-  // Sync services from SQLite backend API on mount
+  // Sync services from backend SQLite API on load
   useEffect(() => {
+    let isMounted = true;
     fetchServicesFromApi().then((apiServices) => {
-      if (apiServices && apiServices.length > 0) {
+      if (isMounted && apiServices && apiServices.length > 0) {
         setServices(apiServices);
         localStorage.setItem(LOCAL_STORAGE_SERVICES_KEY, JSON.stringify(apiServices));
       }
     });
+    return () => {
+      isMounted = false;
+    };
   }, []);
 
-  const saveServicesToStorage = (newServices: ServiceConfig[]) => {
-    setServices(newServices);
-    localStorage.setItem(LOCAL_STORAGE_SERVICES_KEY, JSON.stringify(newServices));
-  };
+  const saveServicesToStateAndLocal = useCallback((updated: ServiceConfig[]) => {
+    setServices(updated);
+    localStorage.setItem(LOCAL_STORAGE_SERVICES_KEY, JSON.stringify(updated));
+  }, []);
 
-  const triggerPollSingle = useCallback(async (serviceId: string) => {
-    const targetConfig = services.find((s) => s.id === serviceId);
-    if (!targetConfig || targetConfig.enabled === false) return;
+  const pollSingle = useCallback(async (service: ServiceConfig) => {
+    if (service.muted || service.enabled === false) return;
 
-    lastPolledMap.current[serviceId] = Date.now();
-
-    let res = await pollServiceViaApi(targetConfig);
+    let res = await pollServiceViaApi(service);
     if (!res) {
-      res = await executePullPoll(targetConfig);
+      res = await executePullPoll(service);
     }
 
-    const prevRes = results[serviceId];
-    if (prevRes && prevRes.status !== res.status) {
-      const incident: Incident = {
-        id: `inc_${Date.now()}_${Math.random().toString(36).substring(2, 6)}`,
-        service_id: targetConfig.id,
-        service_name: targetConfig.name,
-        previous_status: prevRes.status,
-        new_status: res.status,
-        reason: res.error_message || `State transitioned to ${res.status.toUpperCase()}`,
-        timestamp: new Date().toLocaleTimeString(),
-      };
-      setIncidents((incPrev) => [incident, ...incPrev.slice(0, 49)]);
-    }
+    setResults((prev) => {
+      const prevResult = prev[service.id];
+      const prevHistory = prevResult?.latency_history || [25, 30, 28, 35, 40];
+      const newHistory = [...prevHistory.slice(-9), res.latency_ms];
 
-    setResults((prev) => ({ ...prev, [serviceId]: res! }));
-  }, [services, results]);
+      const previousStatus = prevResult?.status || 'operational';
+      const newStatus = res.status;
 
-  const triggerPollAll = useCallback(async () => {
-    for (const service of services) {
-      if (service.enabled !== false && !service.muted) {
-        await triggerPollSingle(service.id);
+      if (previousStatus !== newStatus && previousStatus !== 'operational') {
+        const newIncident: IncidentLog = {
+          id: `inc_${Date.now()}`,
+          service_id: service.id,
+          service_name: service.name,
+          previous_status: previousStatus,
+          new_status: newStatus,
+          reason: res.error_message || `Service status changed from ${previousStatus} to ${newStatus}`,
+          timestamp: new Date().toLocaleTimeString(),
+        };
+        setIncidents((prevInc) => [newIncident, ...prevInc.slice(0, 19)]);
       }
-    }
-  }, [services, triggerPollSingle]);
 
-  // Initial poll on mount
-  useEffect(() => {
-    triggerPollAll();
-  }, [triggerPollAll]);
+      return {
+        ...prev,
+        [service.id]: {
+          ...res,
+          latency_history: newHistory,
+        },
+      };
+    });
+  }, []);
 
-  // Strict interval ticker loop checking each service against its poll_interval_sec
+  const pollAll = useCallback(async () => {
+    const activeServices = services.filter((s) => !s.muted && s.enabled !== false);
+    await Promise.all(activeServices.map((s) => pollSingle(s)));
+  }, [services, pollSingle]);
+
+  // Polling interval timer
+  const pollAllRef = useRef(pollAll);
+  pollAllRef.current = pollAll;
+
   useEffect(() => {
     if (!isPollingActive) return;
 
-    const ticker = setInterval(() => {
-      const now = Date.now();
-      services.forEach((service) => {
-        // Skip disabled or muted services
-        if (service.enabled === false || service.muted) return;
+    pollAllRef.current();
 
-        const intervalMs = (service.poll_interval_sec || 15) * 1000;
-        const lastPolled = lastPolledMap.current[service.id] || 0;
+    const interval = setInterval(() => {
+      pollAllRef.current();
+    }, 15000);
 
-        if (now - lastPolled >= intervalMs) {
-          triggerPollSingle(service.id);
-        }
-      });
-    }, 2000); // Check every 2s if any service is due for polling
+    return () => clearInterval(interval);
+  }, [isPollingActive]);
 
-    return () => clearInterval(ticker);
-  }, [isPollingActive, services, triggerPollSingle]);
+  const togglePolling = () => setIsPollingActive((prev) => !prev);
+  const triggerPollAll = async () => {
+    await pollAll();
+  };
+
+  const triggerPollSingle = async (serviceId: string) => {
+    const s = services.find((srv) => srv.id === serviceId);
+    if (s) {
+      await pollSingle(s);
+    }
+  };
 
   const toggleMuteService = (serviceId: string) => {
-    const updated = services.map((s) => {
-      if (s.id === serviceId) {
-        const newMuted = !s.muted;
-        const updatedConfig = { ...s, muted: newMuted };
-        saveServiceToApi(updatedConfig);
-        return updatedConfig;
-      }
-      return s;
-    });
-    saveServicesToStorage(updated);
-    triggerPollSingle(serviceId);
+    const updated = services.map((s) => (s.id === serviceId ? { ...s, muted: !s.muted } : s));
+    saveServicesToStateAndLocal(updated);
+    const target = updated.find((s) => s.id === serviceId);
+    if (target) {
+      saveServiceToApi(target);
+    }
   };
 
   const toggleEnableService = (serviceId: string) => {
-    const updated = services.map((s) => {
-      if (s.id === serviceId) {
-        const newEnabled = s.enabled === false ? true : false;
-        const updatedConfig = { ...s, enabled: newEnabled };
-        saveServiceToApi(updatedConfig);
-        return updatedConfig;
-      }
-      return s;
-    });
-    saveServicesToStorage(updated);
-
-    // If re-enabled, poll immediately
+    const updated = services.map((s) => (s.id === serviceId ? { ...s, enabled: s.enabled === false ? true : false } : s));
+    saveServicesToStateAndLocal(updated);
     const target = updated.find((s) => s.id === serviceId);
-    if (target && target.enabled) {
-      triggerPollSingle(serviceId);
+    if (target) {
+      saveServiceToApi(target);
     }
-  };
-
-  const saveService = (data: Omit<ServiceConfig, 'id' | 'created_at'> & { id?: string }) => {
-    let serviceToSave: ServiceConfig;
-    if (data.id) {
-      serviceToSave = {
-        ...data,
-        id: data.id,
-        enabled: data.enabled !== undefined ? data.enabled : true,
-        created_at: services.find((s) => s.id === data.id)?.created_at || new Date().toISOString(),
-      } as ServiceConfig;
-      const updated = services.map((s) => (s.id === data.id ? serviceToSave : s));
-      saveServicesToStorage(updated);
-    } else {
-      serviceToSave = {
-        ...data,
-        id: `srv-${Date.now()}`,
-        enabled: true,
-        created_at: new Date().toISOString(),
-      };
-      saveServicesToStorage([...services, serviceToSave]);
-    }
-
-    // Persist in SQLite
-    saveServiceToApi(serviceToSave);
-
-    setIsAddModalOpen(false);
-    setEditingService(null);
-    triggerPollSingle(serviceToSave.id);
-  };
-
-  const deleteService = (serviceId: string) => {
-    const updated = services.filter((s) => s.id !== serviceId);
-    saveServicesToStorage(updated);
-    deleteServiceFromApi(serviceId);
-    delete lastPolledMap.current[serviceId];
-
-    setResults((prev) => {
-      const copy = { ...prev };
-      delete copy[serviceId];
-      return copy;
-    });
   };
 
   const openAddModal = (service?: ServiceConfig) => {
@@ -213,8 +148,41 @@ export const HealthProvider: React.FC<{ children: ReactNode }> = ({ children }) 
   };
 
   const closeAddModal = () => {
-    setIsAddModalOpen(false);
     setEditingService(null);
+    setIsAddModalOpen(false);
+  };
+
+  const saveService = (config: Omit<ServiceConfig, 'id' | 'created_at'> & { id?: string }) => {
+    let updated: ServiceConfig[];
+    let target: ServiceConfig;
+
+    if (config.id) {
+      updated = services.map((s) => (s.id === config.id ? ({ ...s, ...config } as ServiceConfig) : s));
+      target = updated.find((s) => s.id === config.id)!;
+    } else {
+      const newService: ServiceConfig = {
+        ...config,
+        id: `srv_${Date.now()}`,
+        created_at: new Date().toISOString(),
+      };
+      updated = [...services, newService];
+      target = newService;
+    }
+
+    saveServicesToStateAndLocal(updated);
+    saveServiceToApi(target);
+    closeAddModal();
+  };
+
+  const deleteService = (serviceId: string) => {
+    const updated = services.filter((s) => s.id !== serviceId);
+    saveServicesToStateAndLocal(updated);
+    deleteServiceFromApi(serviceId);
+    setResults((prev) => {
+      const copy = { ...prev };
+      delete copy[serviceId];
+      return copy;
+    });
   };
 
   const openQueueInspector = (serviceWithStatus: ServiceWithStatus) => {
@@ -226,10 +194,10 @@ export const HealthProvider: React.FC<{ children: ReactNode }> = ({ children }) 
   };
 
   const exportConfigJson = () => {
-    const dataStr = "data:text/json;charset=utf-8," + encodeURIComponent(JSON.stringify(services, null, 2));
+    const dataStr = 'data:text/json;charset=utf-8,' + encodeURIComponent(JSON.stringify(services, null, 2));
     const downloadAnchor = document.createElement('a');
-    downloadAnchor.setAttribute("href", dataStr);
-    downloadAnchor.setAttribute("download", `ketarisentry_fleet_${new Date().toISOString().split('T')[0]}.json`);
+    downloadAnchor.setAttribute('href', dataStr);
+    downloadAnchor.setAttribute('download', `ketarisentry_fleet_config_${new Date().toISOString().substring(0, 10)}.json`);
     document.body.appendChild(downloadAnchor);
     downloadAnchor.click();
     downloadAnchor.remove();
@@ -238,14 +206,13 @@ export const HealthProvider: React.FC<{ children: ReactNode }> = ({ children }) 
   const importConfigJson = (jsonString: string): boolean => {
     try {
       const parsed = JSON.parse(jsonString);
-      if (Array.isArray(parsed) && parsed.length > 0 && parsed[0].url) {
-        saveServicesToStorage(parsed);
+      if (Array.isArray(parsed)) {
+        saveServicesToStateAndLocal(parsed);
         parsed.forEach((s) => saveServiceToApi(s));
-        triggerPollAll();
         return true;
       }
     } catch {
-      // Invalid
+      // Invalid JSON
     }
     return false;
   };
@@ -257,10 +224,10 @@ export const HealthProvider: React.FC<{ children: ReactNode }> = ({ children }) 
         results,
         incidents,
         isPollingActive,
-        selectedServiceForInspector,
         isAddModalOpen,
         editingService,
-        togglePolling: () => setIsPollingActive((prev) => !prev),
+        selectedServiceForInspector,
+        togglePolling,
         triggerPollAll,
         triggerPollSingle,
         toggleMuteService,
@@ -278,12 +245,4 @@ export const HealthProvider: React.FC<{ children: ReactNode }> = ({ children }) 
       {children}
     </HealthContext.Provider>
   );
-};
-
-export const useHealth = () => {
-  const context = useContext(HealthContext);
-  if (!context) {
-    throw new Error('useHealth must be used within a HealthProvider');
-  }
-  return context;
 };

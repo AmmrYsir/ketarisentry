@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { X, Layers, AlertOctagon, CheckCircle2, ChevronDown, ChevronRight, Copy, Check } from 'lucide-react';
-import { useHealth } from '../context/HealthContext';
+import { useHealth } from '../hooks/useHealth';
 import type { FailedJobTrace } from '../types';
 
 export const QueueInspectorModal: React.FC = () => {

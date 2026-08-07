@@ -22,8 +22,8 @@ import {
   PowerOff
 } from 'lucide-react';
 import type { ServiceConfig, PollResult, HealthStatus, DynamicCheck, CheckType } from '../types';
-import { useAuth } from '../context/AuthContext';
-import { useHealth } from '../context/HealthContext';
+import { useAuth } from '../hooks/useAuth';
+import { useHealth } from '../hooks/useHealth';
 
 interface ServiceCardProps {
   config: ServiceConfig;

@@ -81,7 +81,7 @@ export const Header: React.FC<HeaderProps> = ({ onOpenAuditLog }) => {
           </div>
           <div>
             <div className="flex items-center space-x-2">
-              <h1 className="text-lg font-bold tracking-tight text-slate-100">KetariSentry</h1>
+              <h1 className="text-lg font-bold tracking-tight text-slate-100">Ketarisentry</h1>
               <span className="text-[10px] uppercase font-bold tracking-wider px-2 py-0.5 rounded-full bg-emerald-950 text-emerald-400 border border-emerald-800/50">
                 Hub
               </span>

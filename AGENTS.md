@@ -1,13 +1,13 @@
-# KetariSentry Developer & AI Agent Guidelines
+# Ketarisentry Developer & AI Agent Guidelines
 
-Welcome! This document defines the engineering standards, architecture rules, design invariants, and workflow conventions for developers and AI Coding Assistants (e.g. Antigravity, Claude, Cursor) working on **KetariSentry**.
+Welcome! This document defines the engineering standards, architecture rules, design invariants, and workflow conventions for developers and AI Coding Assistants (e.g. Antigravity, Claude, Cursor) working on **Ketarisentry**.
 
 ---
 
 ## 🏛️ System Architecture Invariants
 
 1. **Pull Polling Only**:
-   - KetariSentry operates purely on **Pull Polling**. Do not add push-webhook ingestion endpoints or server listeners to the frontend SPA.
+   - Ketarisentry operates purely on **Pull Polling**. Do not add push-webhook ingestion endpoints or server listeners to the frontend SPA.
    - All HTTP requests to target health endpoints must handle CORS gracefully, enforce timeout boundaries, and support custom security headers (`Authorization`, `X-Ketari-Secret`).
 
 2. **State Hierarchy & Immutability**:

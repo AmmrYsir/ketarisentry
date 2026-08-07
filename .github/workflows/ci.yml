@@ -1,0 +1,38 @@
+name: Ketarisentry CI
+
+on:
+  push:
+    branches: [ main ]
+  pull_request:
+    branches: [ main ]
+
+jobs:
+  build-and-test:
+    name: Build, Lint & Test Suite
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout Repository Source
+        uses: actions/checkout@v4
+
+      - name: Setup Bun Environment
+        uses: oven-sh/setup-bun@v2
+        with:
+          bun-version: latest
+
+      - name: Install Dependencies
+        run: bun install --frozen-lockfile
+
+      - name: Initialize Database Schema & Seed
+        run: bun run db:init
+
+      - name: Run Oxlint Static Analysis
+        run: bun run lint
+
+      - name: Typecheck Server & Build Vite Frontend Bundle
+        run: |
+          bun x tsc --noEmit -p tsconfig.server.json
+          bun run build
+
+      - name: Run Automated Bun Unit Test Suite
+        run: bun test

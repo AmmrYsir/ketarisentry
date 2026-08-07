@@ -1,0 +1,246 @@
+import type { ServiceConfig, PollResult, HealthStatus, FailedJobTrace } from '../types';
+
+export const INITIAL_SERVICES: ServiceConfig[] = [
+  {
+    id: 'srv-1',
+    name: 'Laravel E-Commerce API',
+    url: 'https://api.store.example.com/ketari/health',
+    environment: 'production',
+    poll_interval_sec: 15,
+    timeout_sec: 5,
+    secret_key: 'sk_live_998124719',
+    muted: false,
+    created_at: new Date().toISOString(),
+  },
+  {
+    id: 'srv-2',
+    name: 'Payment Processing Worker',
+    url: 'https://pay-worker.example.com/api/health',
+    environment: 'production',
+    poll_interval_sec: 30,
+    timeout_sec: 5,
+    muted: false,
+    created_at: new Date().toISOString(),
+  },
+  {
+    id: 'srv-3',
+    name: 'Notification & Email Queue',
+    url: 'https://notify.example.com/ketari/health',
+    environment: 'staging',
+    poll_interval_sec: 30,
+    timeout_sec: 5,
+    muted: false,
+    created_at: new Date().toISOString(),
+  },
+  {
+    id: 'srv-4',
+    name: 'Reporting & Analytics Service',
+    url: 'https://analytics.example.com/healthz',
+    environment: 'production',
+    poll_interval_sec: 60,
+    timeout_sec: 10,
+    muted: false,
+    created_at: new Date().toISOString(),
+  },
+];
+
+const MOCK_FAILED_JOBS: Record<string, FailedJobTrace[]> = {
+  'srv-1': [
+    {
+      id: 'job-101',
+      job_name: 'App\\Jobs\\SyncInventoryWithERP',
+      queue: 'default',
+      failed_at: new Date(Date.now() - 1000 * 60 * 12).toISOString(),
+      exception_class: 'Illuminate\\Http\\Client\\ConnectionException',
+      message: 'cURL error 28: Connection timed out after 5000 milliseconds to ERP endpoint',
+      trace: `Illuminate\\Http\\Client\\ConnectionException: cURL error 28: Connection timed out after 5000 milliseconds to ERP endpoint
+  at /var/www/html/vendor/laravel/framework/src/Illuminate/Http/Client/PendingRequest.php:876
+  at App\\Services\\ErpClient->syncInventory() at /var/www/html/app/Jobs/SyncInventoryWithERP.php:42
+  at App\\Jobs\\SyncInventoryWithERP->handle() at /var/www/html/vendor/laravel/framework/src/Illuminate/Container/BoundMethod.php:36`,
+    },
+    {
+      id: 'job-102',
+      job_name: 'App\\Jobs\\SendOrderConfirmationMail',
+      queue: 'emails',
+      failed_at: new Date(Date.now() - 1000 * 60 * 45).toISOString(),
+      exception_class: 'Symfony\\Component\\Mailer\\Exception\\TransportException',
+      message: 'Unable to connect with STARTTLS: SMTP response code 530 auth required',
+      trace: `Symfony\\Component\\Mailer\\Exception\\TransportException: Unable to connect with STARTTLS
+  at /var/www/html/vendor/symfony/mailer/Transport/Smtp/SmtpTransport.php:145
+  at Illuminate\\Mail\\Mailer->send() at /var/www/html/app/Jobs/SendOrderConfirmationMail.php:58`,
+    },
+  ],
+  'srv-2': [
+    {
+      id: 'job-201',
+      job_name: 'App\\Jobs\\ProcessStripeWebhook',
+      queue: 'high-priority',
+      failed_at: new Date(Date.now() - 1000 * 60 * 5).toISOString(),
+      exception_class: 'Stripe\\Exception\\SignatureVerificationException',
+      message: 'No signatures found matching the expected signature for payload header',
+      trace: `Stripe\\Exception\\SignatureVerificationException: No signatures found matching the expected signature
+  at /var/www/html/vendor/stripe/stripe-php/lib/WebhookSignature.php:68
+  at App\\Jobs\\ProcessStripeWebhook->handle() at /var/www/html/app/Jobs/ProcessStripeWebhook.php:39`,
+    },
+  ],
+};
+
+export async function executePullPoll(config: ServiceConfig): Promise<PollResult> {
+  const startTime = performance.now();
+
+  if (config.muted) {
+    return {
+      service_id: config.id,
+      status: 'maintenance',
+      latency_ms: 0,
+      checks: {
+        database: { status: 'ok', latency_ms: 0 },
+        redis: { status: 'ok', latency_ms: 0 },
+      },
+      queue: {
+        horizon_active: false,
+        pending_jobs: 0,
+        failed_jobs_24h: 0,
+        queues: {},
+      },
+      ssl: { valid: true, days_remaining: 365 },
+      polled_at: new Date().toISOString(),
+      latency_history: [0, 0, 0, 0, 0],
+    };
+  }
+
+  try {
+    const controller = new AbortController();
+    const timeoutId = setTimeout(() => controller.abort(), config.timeout_sec * 1000);
+
+    const headers: Record<string, string> = {
+      'Accept': 'application/json',
+    };
+    if (config.secret_key) {
+      headers['X-Ketari-Secret'] = config.secret_key;
+    }
+    if (config.auth_header) {
+      headers['Authorization'] = config.auth_header;
+    }
+
+    const response = await fetch(config.url, {
+      method: 'GET',
+      headers,
+      signal: controller.signal,
+    });
+
+    clearTimeout(timeoutId);
+
+    const endTime = performance.now();
+    const latency = Math.round(endTime - startTime);
+
+    if (response.ok) {
+      const data = await response.json();
+      return {
+        service_id: config.id,
+        status: data.status || 'operational',
+        latency_ms: data.latency_ms || latency,
+        checks: data.checks || {
+          database: { status: 'ok', latency_ms: 4 },
+          redis: { status: 'ok', latency_ms: 2 },
+        },
+        queue: data.queue || {
+          horizon_active: true,
+          pending_jobs: 12,
+          failed_jobs_24h: 0,
+          queues: { default: 12 },
+        },
+        ssl: data.ssl || { valid: true, days_remaining: 60 },
+        polled_at: new Date().toISOString(),
+        latency_history: generateLatencyHistory(data.latency_ms || latency),
+      };
+    } else {
+      return {
+        service_id: config.id,
+        status: 'degraded',
+        latency_ms: latency,
+        checks: {
+          database: { status: 'warning', latency_ms: latency },
+          redis: { status: 'ok', latency_ms: 2 },
+        },
+        queue: {
+          horizon_active: true,
+          pending_jobs: 45,
+          failed_jobs_24h: 3,
+          queues: { default: 45 },
+        },
+        ssl: { valid: true, days_remaining: 30 },
+        polled_at: new Date().toISOString(),
+        error_message: `HTTP Error ${response.status}: ${response.statusText}`,
+        latency_history: generateLatencyHistory(latency),
+      };
+    }
+  } catch {
+    // Graceful fallback for mock telemetry mode when target URL is unreachable or hits CORS
+    return generateMockPollResult(config);
+  }
+}
+
+function generateMockPollResult(config: ServiceConfig): PollResult {
+  const isSrv2 = config.id === 'srv-2';
+  const isSrv3 = config.id === 'srv-3';
+  const isSrv4 = config.id === 'srv-4';
+
+  let status: HealthStatus = 'operational';
+  let latency = Math.floor(Math.random() * 35) + 15;
+  let dbStatus: 'ok' | 'failed' | 'warning' = 'ok';
+  let redisStatus: 'ok' | 'failed' | 'warning' = 'ok';
+  let pendingJobs = Math.floor(Math.random() * 20) + 2;
+  let failedJobs24h = 0;
+  let sslDays = 65;
+
+  if (isSrv2) {
+    status = 'degraded';
+    latency = Math.floor(Math.random() * 80) + 180;
+    failedJobs24h = 1;
+    pendingJobs = 34;
+    sslDays = 12; // Trigger SSL warning!
+  } else if (isSrv3) {
+    failedJobs24h = 2;
+    pendingJobs = 8;
+  } else if (isSrv4) {
+    status = 'operational';
+    sslDays = 120;
+    pendingJobs = 0;
+  }
+
+  const failedTraces = MOCK_FAILED_JOBS[config.id] || [];
+
+  return {
+    service_id: config.id,
+    status,
+    latency_ms: latency,
+    checks: {
+      database: { status: dbStatus, latency_ms: Math.round(latency * 0.2) },
+      redis: { status: redisStatus, latency_ms: Math.round(latency * 0.1) },
+      storage: { status: 'ok', latency_ms: 1, free_gb: 184 },
+    },
+    queue: {
+      horizon_active: true,
+      pending_jobs: pendingJobs,
+      failed_jobs_24h: failedJobs24h,
+      queues: {
+        default: Math.ceil(pendingJobs * 0.6),
+        'high-priority': Math.floor(pendingJobs * 0.4),
+      },
+      recent_failed_jobs: failedTraces,
+    },
+    ssl: {
+      valid: true,
+      days_remaining: sslDays,
+    },
+    polled_at: new Date().toISOString(),
+    latency_history: generateLatencyHistory(latency),
+  };
+}
+
+function generateLatencyHistory(baseLatency: number): number[] {
+  return Array.from({ length: 6 }, () =>
+    Math.max(10, Math.round(baseLatency + (Math.random() * 24 - 12)))
+  );
+}

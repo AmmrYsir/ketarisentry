@@ -1,7 +1,17 @@
 import { Database } from 'bun:sqlite';
 import fs from 'node:fs';
 import path from 'node:path';
-import type { ServiceConfig, PollResult, AuditLogEntry, AuthUser } from '../src/types';
+import type { ServiceConfig, PollResult, AuditLogEntry, AuthUser, DynamicCheck, FailedJobTrace } from '../src/types';
+
+// Ensure .env file exists by copying .env.example if missing
+if (!fs.existsSync('.env') && fs.existsSync('.env.example')) {
+  try {
+    fs.copyFileSync('.env.example', '.env');
+    console.log('📄 Automatically created .env from .env.example');
+  } catch {
+    // Ignore error
+  }
+}
 
 const dbPath = process.env.DB_PATH || 'database/ketarisentry.db';
 const dbDir = path.dirname(dbPath);
@@ -93,8 +103,8 @@ if (countResult.count === 0) {
 
 export function seedDefaultData(): void {
   const insertService = db.prepare(`
-    INSERT OR IGNORE INTO services (id, name, url, environment, poll_interval_sec, timeout_sec, secret_key, muted, created_at)
-    VALUES ($id, $name, $url, $environment, $poll_interval_sec, $timeout_sec, $secret_key, $muted, $created_at)
+    INSERT OR IGNORE INTO services (id, name, url, environment, poll_interval_sec, timeout_sec, secret_key, muted, enabled, created_at)
+    VALUES ($id, $name, $url, $environment, $poll_interval_sec, $timeout_sec, $secret_key, $muted, $enabled, $created_at)
   `);
 
   insertService.run({
@@ -106,6 +116,7 @@ export function seedDefaultData(): void {
     $timeout_sec: 5,
     $secret_key: 'sk_live_998124719',
     $muted: 0,
+    $enabled: 1,
     $created_at: new Date().toISOString(),
   });
 
@@ -118,6 +129,7 @@ export function seedDefaultData(): void {
     $timeout_sec: 5,
     $secret_key: null,
     $muted: 0,
+    $enabled: 1,
     $created_at: new Date().toISOString(),
   });
 
@@ -130,6 +142,7 @@ export function seedDefaultData(): void {
     $timeout_sec: 5,
     $secret_key: null,
     $muted: 0,
+    $enabled: 1,
     $created_at: new Date().toISOString(),
   });
 
@@ -216,7 +229,7 @@ export function deleteServiceFromDb(id: string): void {
 
 // Telemetry & Poll Log queries
 export function recordPollLog(result: PollResult): void {
-  const allChecks = Object.values(result.checks || {});
+  const allChecks: DynamicCheck[] = Object.values(result.checks || {});
   const dbCheck = allChecks.find((c) => c.type === 'database');
   const redisCheck = allChecks.find((c) => c.type === 'redis');
 
@@ -241,7 +254,7 @@ export function recordPollLog(result: PollResult): void {
       INSERT OR REPLACE INTO failed_jobs_history (id, service_id, job_name, queue, failed_at, exception_class, message, trace, recorded_at)
       VALUES ($id, $service_id, $job_name, $queue, $failed_at, $exception_class, $message, $trace, $recorded_at)
     `);
-    result.queue.recent_failed_jobs.forEach((job) => {
+    result.queue.recent_failed_jobs.forEach((job: FailedJobTrace) => {
       insertFailedJob.run({
         $id: job.id,
         $service_id: result.service_id,

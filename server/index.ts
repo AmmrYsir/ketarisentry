@@ -62,7 +62,7 @@ Bun.serve({
         }
 
         const servicesBefore = getAllServices();
-        const target = servicesBefore.find((s) => s.id === id);
+        const target = servicesBefore.find((s: ServiceConfig) => s.id === id);
 
         deleteServiceFromDb(id);
 

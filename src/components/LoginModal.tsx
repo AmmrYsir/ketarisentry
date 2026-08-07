@@ -3,7 +3,14 @@ import { X, Shield, Lock, UserCheck, AlertCircle } from 'lucide-react';
 import { useAuth } from '../context/AuthContext';
 
 export const LoginModal: React.FC = () => {
-  const { isLoginModalOpen, closeLoginModal, loginWithSandbox, googleClientId } = useAuth();
+  const { 
+    isLoginModalOpen, 
+    closeLoginModal, 
+    loginWithSandbox, 
+    loginWithGoogleToken, 
+    isSandboxAllowed, 
+    googleClientId 
+  } = useAuth();
 
   if (!isLoginModalOpen) return null;
 
@@ -32,8 +39,13 @@ export const LoginModal: React.FC = () => {
         <div className="mb-6 space-y-3">
           <button
             onClick={() => {
-              // Simulated Google Login trigger when client ID is active or sandbox mode fallback
-              loginWithSandbox('admin');
+              if (isSandboxAllowed && !googleClientId) {
+                loginWithSandbox('admin');
+              } else {
+                loginWithGoogleToken({
+                  credential: '',
+                });
+              }
             }}
             className="w-full py-3 px-4 rounded-2xl bg-white hover:bg-slate-100 text-slate-900 font-bold text-xs flex items-center justify-center space-x-3 transition-all shadow-[4px_4px_10px_rgba(0,0,0,0.2)] active:scale-[0.98]"
           >
@@ -58,47 +70,58 @@ export const LoginModal: React.FC = () => {
             <span>Sign in with Google</span>
           </button>
 
-          {!googleClientId && (
+          {!googleClientId && !isSandboxAllowed && (
+            <p className="text-[11px] text-rose-400 flex items-center justify-center space-x-1">
+              <AlertCircle className="w-3.5 h-3.5" />
+              <span>VITE_GOOGLE_CLIENT_ID must be set in .env for production login.</span>
+            </p>
+          )}
+
+          {!googleClientId && isSandboxAllowed && (
             <p className="text-[11px] text-slate-400 flex items-center justify-center space-x-1">
               <AlertCircle className="w-3 h-3 text-amber-400" />
-              <span>VITE_GOOGLE_CLIENT_ID not set. Sandbox Mode ready below.</span>
+              <span>VITE_GOOGLE_CLIENT_ID not set. Sandbox Mode enabled below.</span>
             </p>
           )}
         </div>
 
-        <div className="relative my-6">
-          <div className="absolute inset-0 flex items-center">
-            <div className="w-full border-t border-slate-800" />
-          </div>
-          <div className="relative flex justify-center text-[10px] uppercase font-bold tracking-wider">
-            <span className="bg-slate-900 px-3 text-slate-400">Or Offline Demo Sandbox</span>
-          </div>
-        </div>
-
-        {/* Demo Roles Selection */}
-        <div className="space-y-2">
-          <button
-            onClick={() => loginWithSandbox('admin')}
-            className="w-full py-2.5 px-4 rounded-xl bg-slate-800 hover:bg-slate-700 text-slate-200 font-semibold text-xs transition-all flex items-center justify-between border border-slate-700/60"
-          >
-            <div className="flex items-center space-x-2">
-              <UserCheck className="w-4 h-4 text-emerald-400" />
-              <span>Enter Sandbox as Admin</span>
+        {/* Sandbox Demo Roles Section (Only rendered in non-production environments) */}
+        {isSandboxAllowed && (
+          <>
+            <div className="relative my-6">
+              <div className="absolute inset-0 flex items-center">
+                <div className="w-full border-t border-slate-800" />
+              </div>
+              <div className="relative flex justify-center text-[10px] uppercase font-bold tracking-wider">
+                <span className="bg-slate-900 px-3 text-slate-400">Development Sandbox Demo</span>
+              </div>
             </div>
-            <span className="text-[10px] text-emerald-400 font-mono">Full Access</span>
-          </button>
 
-          <button
-            onClick={() => loginWithSandbox('viewer')}
-            className="w-full py-2.5 px-4 rounded-xl bg-slate-800 hover:bg-slate-700 text-slate-200 font-semibold text-xs transition-all flex items-center justify-between border border-slate-700/60"
-          >
-            <div className="flex items-center space-x-2">
-              <Lock className="w-4 h-4 text-indigo-400" />
-              <span>Enter Sandbox as Viewer</span>
+            <div className="space-y-2">
+              <button
+                onClick={() => loginWithSandbox('admin')}
+                className="w-full py-2.5 px-4 rounded-xl bg-slate-800 hover:bg-slate-700 text-slate-200 font-semibold text-xs transition-all flex items-center justify-between border border-slate-700/60"
+              >
+                <div className="flex items-center space-x-2">
+                  <UserCheck className="w-4 h-4 text-emerald-400" />
+                  <span>Enter Sandbox as Admin</span>
+                </div>
+                <span className="text-[10px] text-emerald-400 font-mono">Full Access</span>
+              </button>
+
+              <button
+                onClick={() => loginWithSandbox('viewer')}
+                className="w-full py-2.5 px-4 rounded-xl bg-slate-800 hover:bg-slate-700 text-slate-200 font-semibold text-xs transition-all flex items-center justify-between border border-slate-700/60"
+              >
+                <div className="flex items-center space-x-2">
+                  <Lock className="w-4 h-4 text-indigo-400" />
+                  <span>Enter Sandbox as Viewer</span>
+                </div>
+                <span className="text-[10px] text-slate-400 font-mono">Read Only</span>
+              </button>
             </div>
-            <span className="text-[10px] text-slate-400 font-mono">Read Only</span>
-          </button>
-        </div>
+          </>
+        )}
       </div>
     </div>
   );

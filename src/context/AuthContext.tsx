@@ -1,4 +1,4 @@
-import React, { createContext, useContext, useState, useEffect } from 'react';
+import React, { createContext, useContext, useState, useEffect, useCallback } from 'react';
 import type { ReactNode } from 'react';
 import type { AuthUser, UserRole } from '../types';
 import { syncUserLoginWithApi } from '../services/apiClient';
@@ -7,6 +7,8 @@ interface AuthContextType {
   user: AuthUser | null;
   isAuthenticated: boolean;
   isLoginModalOpen: boolean;
+  isSandboxAllowed: boolean;
+  isProduction: boolean;
   googleClientId: string | null;
   openLoginModal: () => void;
   closeLoginModal: () => void;
@@ -26,21 +28,12 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
 
   const googleClientId = import.meta.env.VITE_GOOGLE_CLIENT_ID || null;
 
-  useEffect(() => {
-    const savedUser = localStorage.getItem(LOCAL_STORAGE_KEY);
-    if (savedUser) {
-      try {
-        setUser(JSON.parse(savedUser));
-      } catch {
-        localStorage.removeItem(LOCAL_STORAGE_KEY);
-      }
-    } else {
-      // Default to Sandbox Demo user on initial load for frictionless experience
-      loginWithSandbox('admin');
-    }
-  }, []);
+  // Determine environment mode
+  const envMode = (import.meta.env.VITE_NODE_ENV || import.meta.env.MODE || 'development').toLowerCase();
+  const isProduction = envMode === 'production' || envMode === 'prod';
+  const isSandboxAllowed = !isProduction;
 
-  const saveUserToState = (newUser: AuthUser | null) => {
+  const saveUserToState = useCallback((newUser: AuthUser | null) => {
     setUser(newUser);
     if (newUser) {
       localStorage.setItem(LOCAL_STORAGE_KEY, JSON.stringify(newUser));
@@ -48,9 +41,14 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
     } else {
       localStorage.removeItem(LOCAL_STORAGE_KEY);
     }
-  };
+  }, []);
 
-  const loginWithSandbox = (role: UserRole = 'admin') => {
+  const loginWithSandbox = useCallback((role: UserRole = 'admin') => {
+    if (!isSandboxAllowed) {
+      alert('Sandbox Mode is disabled in production environment.');
+      return;
+    }
+
     const demoUser: AuthUser = {
       id: 'usr_sandbox_99',
       name: 'Ammar (Demo Admin)',
@@ -61,10 +59,34 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
     };
     saveUserToState(demoUser);
     setIsLoginModalOpen(false);
-  };
+  }, [isSandboxAllowed, saveUserToState]);
+
+  useEffect(() => {
+    const savedUser = localStorage.getItem(LOCAL_STORAGE_KEY);
+    if (savedUser) {
+      try {
+        const parsed = JSON.parse(savedUser);
+        if (parsed.is_sandbox && !isSandboxAllowed) {
+          localStorage.removeItem(LOCAL_STORAGE_KEY);
+          setUser(null);
+          setIsLoginModalOpen(true);
+        } else {
+          setUser(parsed);
+        }
+      } catch {
+        localStorage.removeItem(LOCAL_STORAGE_KEY);
+        if (!isSandboxAllowed) setIsLoginModalOpen(true);
+      }
+    } else {
+      if (isSandboxAllowed) {
+        loginWithSandbox('admin');
+      } else {
+        setIsLoginModalOpen(true);
+      }
+    }
+  }, [isSandboxAllowed, loginWithSandbox]);
 
   const loginWithGoogleToken = (credentialResponse: any) => {
-    // Standard OAuth token payload parse (or JWT decode)
     let email = 'user@google.com';
     let name = 'Google User';
     let avatar = 'https://lh3.googleusercontent.com/a/default-user';
@@ -130,6 +152,8 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
         user,
         isAuthenticated: !!user,
         isLoginModalOpen,
+        isSandboxAllowed,
+        isProduction,
         googleClientId,
         openLoginModal: () => setIsLoginModalOpen(true),
         closeLoginModal: () => setIsLoginModalOpen(false),

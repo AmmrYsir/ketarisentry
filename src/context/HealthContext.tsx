@@ -23,11 +23,11 @@ export const HealthProvider: React.FC<{ children: ReactNode }> = ({ children }) 
         // Fallback
       }
     }
-    return initialServices;
+    return INITIAL_SERVICES;
   });
 
   const [results, setResults] = useState<Record<string, PollResult>>({});
-  const [incidents, setIncidents] = useState<IncidentLog[]>([]);
+  const [incidents, setIncidents] = useState<Incident[]>([]);
   const [isPollingActive, setIsPollingActive] = useState<boolean>(true);
   const [isAddModalOpen, setIsAddModalOpen] = useState<boolean>(false);
   const [editingService, setEditingService] = useState<ServiceConfig | null>(null);
@@ -69,7 +69,7 @@ export const HealthProvider: React.FC<{ children: ReactNode }> = ({ children }) 
       const newStatus = res.status;
 
       if (previousStatus !== newStatus && previousStatus !== 'operational') {
-        const newIncident: IncidentLog = {
+        const newIncident: Incident = {
           id: `inc_${Date.now()}`,
           service_id: service.id,
           service_name: service.name,

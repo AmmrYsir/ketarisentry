@@ -1,10 +1,10 @@
 import { createContext } from 'react';
-import type { ServiceConfig, PollResult, IncidentLog, ServiceWithStatus } from '../types';
+import type { ServiceConfig, PollResult, Incident, ServiceWithStatus } from '../types';
 
 export interface HealthContextType {
   services: ServiceConfig[];
   results: Record<string, PollResult>;
-  incidents: IncidentLog[];
+  incidents: Incident[];
   isPollingActive: boolean;
   isAddModalOpen: boolean;
   editingService: ServiceConfig | null;

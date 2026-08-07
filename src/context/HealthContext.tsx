@@ -1,7 +1,7 @@
 import React, { useState, useEffect, useCallback, useRef } from 'react';
 import type { ReactNode } from 'react';
-import type { ServiceConfig, PollResult, IncidentLog, ServiceWithStatus } from '../types';
-import { initialServices } from '../services/pollingEngine';
+import type { ServiceConfig, PollResult, Incident, ServiceWithStatus } from '../types';
+import { INITIAL_SERVICES } from '../services/pollingEngine';
 import { 
   fetchServicesFromApi, 
   saveServiceToApi, 

@@ -11,7 +11,7 @@ Ketarisentry uses **Pull Polling** to periodically probe a single lightweight HT
 ### Key Invariants for Laravel Applications:
 1. **Zero Database Overload**: Results are cached for 10 seconds in Laravel (`Cache::remember()`) so frequent health pings from Ketarisentry consume zero extra database overhead.
 2. **Security**: Protected via an optional `X-Ketari-Secret` HTTP header.
-3. **CORS Support**: Endpoint returns `Access-Control-Allow-Origin: *` so Ketarisentry's browser dashboard can poll without CORS restrictions.
+3. **CORS Preflight Support**: Endpoint handles `OPTIONS` preflight requests and returns `Access-Control-Allow-Origin: *` so Ketarisentry's browser dashboard can poll without CORS restrictions.
 
 ---
 
@@ -61,10 +61,11 @@ class KetariHealthService
             }
             $redisLatency = round((microtime(true) - $redisStart) * 1000, 2);
 
-            // 3. Queue Backlog & Failed Jobs Telemetry
+            // 3. Horizon & Queue Telemetry
             $pendingJobs = 0;
             $failedJobs24h = 0;
             $recentFailedJobs = [];
+            $horizonActive = class_exists(\Laravel\Horizon\Horizon::class);
 
             try {
                 $pendingJobs = Queue::size();
@@ -123,7 +124,7 @@ class KetariHealthService
                     ],
                 ],
                 'queue' => [
-                    'horizon_active' => true,
+                    'horizon_active' => $horizonActive,
                     'pending_jobs' => $pendingJobs,
                     'failed_jobs_24h' => $failedJobs24h,
                     'queues' => [
@@ -143,7 +144,7 @@ class KetariHealthService
 
 ---
 
-### Step 2: Create the Health Controller
+### Step 2: Create the Health Controller (with CORS Preflight Support)
 
 Create a new file at `app/Http/Controllers/KetariHealthController.php`:
 
@@ -160,21 +161,28 @@ class KetariHealthController extends Controller
 {
     public function __invoke(Request $request, KetariHealthService $healthService): JsonResponse
     {
-        // 1. Optional Secret Key Authorization Check
-        $secret = config('services.ketari.secret');
-        if ($secret && $request->header('X-Ketari-Secret') !== $secret) {
-            return response()->json(['error' => 'Unauthorized Secret Key'], 401);
-        }
-
-        // 2. Fetch Cached Health Payload
-        $payload = $healthService->getHealthPayload();
-
-        // 3. Return JSON Response with CORS Headers
-        return response()->json($payload, 200, [
+        $corsHeaders = [
             'Access-Control-Allow-Origin' => '*',
             'Access-Control-Allow-Headers' => 'X-Ketari-Secret, Authorization, Content-Type',
             'Access-Control-Allow-Methods' => 'GET, OPTIONS',
-        ]);
+        ];
+
+        // 1. Preflight OPTIONS handling for CORS
+        if ($request->isMethod('OPTIONS')) {
+            return response()->json(null, 204, $corsHeaders);
+        }
+
+        // 2. Secret Key Authorization Check
+        $secret = config('services.ketari.secret');
+        if ($secret && $request->header('X-Ketari-Secret') !== $secret) {
+            return response()->json(['error' => 'Unauthorized Secret Key'], 401, $corsHeaders);
+        }
+
+        // 3. Fetch Cached Health Payload
+        $payload = $healthService->getHealthPayload();
+
+        // 4. Return JSON Response with CORS Headers
+        return response()->json($payload, 200, $corsHeaders);
     }
 }
 ```
@@ -183,19 +191,32 @@ class KetariHealthController extends Controller
 
 ### Step 3: Register API Route
 
-Open `routes/api.php` and add the GET route:
+#### For Laravel 8, 9, 10:
+Open `routes/api.php` and add:
 
 ```php
 use App\Http\Controllers\KetariHealthController;
 
-Route::get('/ketari/health', KetariHealthController::class);
+Route::match(['get', 'options'], '/ketari/health', KetariHealthController::class);
+```
+
+#### For Laravel 11 & 12+:
+If `routes/api.php` is not created yet, run:
+```bash
+php artisan install:api
+```
+Then add to `routes/api.php`:
+```php
+use App\Http\Controllers\KetariHealthController;
+
+Route::match(['get', 'options'], '/ketari/health', KetariHealthController::class);
 ```
 
 ---
 
-### Step 4: Configure Security Secret Key (Optional but Recommended)
+### Step 4: Configure Security Secret Key (Recommended)
 
-Open `config/services.php` and add the `ketari` service block:
+Open `config/services.php` and add the `ketari` configuration block:
 
 ```php
 'ketari' => [
@@ -203,7 +224,7 @@ Open `config/services.php` and add the `ketari` service block:
 ],
 ```
 
-Then add your secret key in your Laravel `.env` file:
+Then specify your secret key in your Laravel `.env` file:
 
 ```env
 KETARI_SECRET="sk_live_your_secret_key_here"
@@ -261,14 +282,12 @@ Ketarisentry will instantly start polling your Laravel service!
 
 ---
 
-## 🎨 Advanced Customizations
+## 🎨 Custom Health Probes (e.g. S3 Storage, Stripe, Mailgun)
 
-### Adding Custom Checks (e.g. S3 Storage, Mailgun, Stripe)
-
-You can easily register additional checks inside `KetariHealthService.php`:
+Register additional custom probes inside `KetariHealthService.php`:
 
 ```php
-// Custom S3 Check
+// Custom S3 Storage Check
 try {
     \Storage::disk('s3')->exists('health-check.txt');
     $s3Status = 'ok';
@@ -282,5 +301,3 @@ $checks['s3_storage'] = [
     'status' => $s3Status,
 ];
 ```
-
-Ketarisentry will automatically parse and render your custom check with high-contrast status pills!

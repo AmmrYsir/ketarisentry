@@ -1,7 +1,7 @@
 import { initializeSchema, dbPath } from './db';
 
 console.log('----------------------------------------------------');
-console.log('🛡️ KetariSentry First-Timer Database Initializer');
+console.log('🛡️ Ketarisentry First-Timer Database Initializer');
 console.log('----------------------------------------------------');
 console.log(`📂 Database Location: ${dbPath}`);
 

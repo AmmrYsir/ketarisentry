@@ -1,8 +1,8 @@
-# KetariSentry 🛡️
+# Ketarisentry 🛡️
 
-**KetariSentry** is a modern, minimalist, central health & queue monitoring hub built for multi-tenant service infrastructure with first-class support for **Laravel applications**.
+**Ketarisentry** is a modern, minimalist, central health & queue monitoring hub built for multi-tenant service infrastructure with first-class support for **Laravel applications**.
 
-Built with **Bun + Vite + React 19 + TypeScript + React Compiler**, KetariSentry offers real-time pull polling, queue job failure inspection, SSL cert expiry tracking, Google OAuth authentication, and a clean **Claymorphic UI** design system.
+Built with **Bun + Vite + React 19 + TypeScript + React Compiler**, Ketarisentry offers real-time pull polling, queue job failure inspection, SSL cert expiry tracking, Google OAuth authentication, and a clean **Claymorphic UI** design system.
 
 ---
 
@@ -48,7 +48,7 @@ Open [http://localhost:5173](http://localhost:5173) in your browser.
 
 ## 🔑 Google OAuth Setup
 
-KetariSentry supports Google OAuth 2.0 authentication.
+Ketarisentry supports Google OAuth 2.0 authentication.
 
 1. Create a project in the **[Google Cloud Console](https://console.cloud.google.com/)**.
 2. Navigate to **APIs & Services > Credentials** and create an **OAuth 2.0 Client ID** (Web application).
@@ -60,13 +60,13 @@ VITE_GOOGLE_CLIENT_ID="your-google-client-id.apps.googleusercontent.com"
 VITE_ALLOWED_DOMAINS="company.com,tech.io" # Optional: restrict login to specific email domains
 ```
 
-> **Note**: If `VITE_GOOGLE_CLIENT_ID` is not set, KetariSentry automatically provides a **Sandbox Demo Sign-In** for instant offline testing.
+> **Note**: If `VITE_GOOGLE_CLIENT_ID` is not set, Ketarisentry automatically provides a **Sandbox Demo Sign-In** for instant offline testing.
 
 ---
 
 ## 📡 Target Laravel Health Endpoint Setup
 
-KetariSentry polls standard JSON health endpoints on your target services. Below is the expected JSON response payload format:
+Ketarisentry polls standard JSON health endpoints on your target services. Below is the expected JSON response payload format:
 
 ### Standard Response Payload (`/api/ketari/health`)
 

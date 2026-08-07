@@ -61,7 +61,7 @@ export const ServiceModal: React.FC = () => {
       <div className="w-full max-w-xl bg-slate-900 border border-slate-800 rounded-3xl p-6 shadow-[8px_8px_24px_rgba(0,0,0,0.6)] relative">
         
         {/* Modal Header */}
-        <div className="flex items-center justify-between border-b border-slate-800 pb-4 mb-5">
+        <div className="flex items-center justify-between border-b border-slate-800 pb-4 mb-5 select-none">
           <div className="flex items-center space-x-3">
             <div className="w-10 h-10 rounded-2xl bg-emerald-950/80 border border-emerald-800/60 flex items-center justify-center text-emerald-400">
               <Server className="w-5 h-5" />
@@ -76,7 +76,8 @@ export const ServiceModal: React.FC = () => {
 
           <button
             onClick={closeAddModal}
-            className="p-2 rounded-xl bg-slate-800 text-slate-400 hover:text-white hover:bg-slate-700 transition-all"
+            className="p-2 rounded-xl bg-slate-800 text-slate-400 hover:text-white hover:bg-slate-700 active:scale-95 transition-all cursor-pointer"
+            aria-label="Close modal"
           >
             <X className="w-5 h-5" />
           </button>
@@ -85,30 +86,32 @@ export const ServiceModal: React.FC = () => {
         <form onSubmit={handleSubmit} className="space-y-4">
           {/* Service Name */}
           <div>
-            <label className="block text-xs font-semibold text-slate-300 mb-1.5">
+            <label htmlFor="service-name" className="block text-xs font-semibold text-slate-300 mb-1.5 cursor-pointer">
               Service Name <span className="text-rose-400">*</span>
             </label>
             <input
+              id="service-name"
               type="text"
               value={name}
               onChange={(e) => setName(e.target.value)}
               placeholder="e.g. Laravel E-Commerce API"
-              className="w-full px-3.5 py-2.5 rounded-xl bg-slate-950 border border-slate-800 text-slate-100 text-xs focus:outline-none focus:border-emerald-500 transition-all shadow-[inset_2px_2px_4px_rgba(0,0,0,0.4)]"
+              className="w-full px-3.5 py-2.5 rounded-xl bg-slate-950 border border-slate-800 text-slate-100 text-xs focus:outline-none focus:border-emerald-500 focus:ring-1 focus:ring-emerald-500 transition-all shadow-[inset_2px_2px_4px_rgba(0,0,0,0.4)]"
               required
             />
           </div>
 
           {/* Health Endpoint URL */}
           <div>
-            <label className="block text-xs font-semibold text-slate-300 mb-1.5">
+            <label htmlFor="service-url" className="block text-xs font-semibold text-slate-300 mb-1.5 cursor-pointer">
               Health Endpoint URL <span className="text-rose-400">*</span>
             </label>
             <input
+              id="service-url"
               type="url"
               value={url}
               onChange={(e) => setUrl(e.target.value)}
               placeholder="https://api.example.com/ketari/health"
-              className="w-full px-3.5 py-2.5 rounded-xl bg-slate-950 border border-slate-800 text-slate-100 text-xs font-mono focus:outline-none focus:border-emerald-500 transition-all shadow-[inset_2px_2px_4px_rgba(0,0,0,0.4)]"
+              className="w-full px-3.5 py-2.5 rounded-xl bg-slate-950 border border-slate-800 text-slate-100 text-xs font-mono focus:outline-none focus:border-emerald-500 focus:ring-1 focus:ring-emerald-500 transition-all shadow-[inset_2px_2px_4px_rgba(0,0,0,0.4)]"
               required
             />
           </div>
@@ -116,29 +119,31 @@ export const ServiceModal: React.FC = () => {
           {/* Environment & Poll Interval Row */}
           <div className="grid grid-cols-2 gap-3">
             <div>
-              <label className="block text-xs font-semibold text-slate-300 mb-1.5">Environment</label>
+              <label htmlFor="service-env" className="block text-xs font-semibold text-slate-300 mb-1.5 cursor-pointer">Environment</label>
               <select
+                id="service-env"
                 value={environment}
                 onChange={(e) => setEnvironment(e.target.value as any)}
-                className="w-full px-3.5 py-2.5 rounded-xl bg-slate-950 border border-slate-800 text-slate-200 text-xs focus:outline-none focus:border-emerald-500 transition-all shadow-[inset_2px_2px_4px_rgba(0,0,0,0.4)]"
+                className="w-full px-3.5 py-2.5 rounded-xl bg-slate-950 border border-slate-800 text-slate-200 text-xs focus:outline-none focus:border-emerald-500 transition-all shadow-[inset_2px_2px_4px_rgba(0,0,0,0.4)] cursor-pointer"
               >
-                <option value="production">Production</option>
-                <option value="staging">Staging</option>
-                <option value="local">Local / Dev</option>
+                <option value="production" className="bg-slate-900">Production</option>
+                <option value="staging" className="bg-slate-900">Staging</option>
+                <option value="local" className="bg-slate-900">Local / Dev</option>
               </select>
             </div>
 
             <div>
-              <label className="block text-xs font-semibold text-slate-300 mb-1.5">Polling Frequency</label>
+              <label htmlFor="poll-interval" className="block text-xs font-semibold text-slate-300 mb-1.5 cursor-pointer">Polling Frequency</label>
               <select
+                id="poll-interval"
                 value={pollInterval}
                 onChange={(e) => setPollInterval(Number(e.target.value))}
-                className="w-full px-3.5 py-2.5 rounded-xl bg-slate-950 border border-slate-800 text-slate-200 text-xs focus:outline-none focus:border-emerald-500 transition-all shadow-[inset_2px_2px_4px_rgba(0,0,0,0.4)]"
+                className="w-full px-3.5 py-2.5 rounded-xl bg-slate-950 border border-slate-800 text-slate-200 text-xs focus:outline-none focus:border-emerald-500 transition-all shadow-[inset_2px_2px_4px_rgba(0,0,0,0.4)] cursor-pointer"
               >
-                <option value={15}>Every 15 seconds (High Frequency)</option>
-                <option value={30}>Every 30 seconds</option>
-                <option value={60}>Every 1 minute</option>
-                <option value={300}>Every 5 minutes</option>
+                <option value={15} className="bg-slate-900">Every 15 seconds (High Frequency)</option>
+                <option value={30} className="bg-slate-900">Every 30 seconds</option>
+                <option value={60} className="bg-slate-900">Every 1 minute</option>
+                <option value={300} className="bg-slate-900">Every 5 minutes</option>
               </select>
             </div>
           </div>
@@ -146,58 +151,61 @@ export const ServiceModal: React.FC = () => {
           {/* Timeout & Secret Key */}
           <div className="grid grid-cols-2 gap-3">
             <div>
-              <label className="block text-xs font-semibold text-slate-300 mb-1.5">Timeout Limit</label>
+              <label htmlFor="timeout-limit" className="block text-xs font-semibold text-slate-300 mb-1.5 cursor-pointer">Timeout Limit</label>
               <select
+                id="timeout-limit"
                 value={timeoutSec}
                 onChange={(e) => setTimeoutSec(Number(e.target.value))}
-                className="w-full px-3.5 py-2.5 rounded-xl bg-slate-950 border border-slate-800 text-slate-200 text-xs focus:outline-none focus:border-emerald-500 transition-all shadow-[inset_2px_2px_4px_rgba(0,0,0,0.4)]"
+                className="w-full px-3.5 py-2.5 rounded-xl bg-slate-950 border border-slate-800 text-slate-200 text-xs focus:outline-none focus:border-emerald-500 transition-all shadow-[inset_2px_2px_4px_rgba(0,0,0,0.4)] cursor-pointer"
               >
-                <option value={2}>2 Seconds</option>
-                <option value={5}>5 Seconds (Recommended)</option>
-                <option value={10}>10 Seconds</option>
+                <option value={2} className="bg-slate-900">2 Seconds</option>
+                <option value={5} className="bg-slate-900">5 Seconds (Recommended)</option>
+                <option value={10} className="bg-slate-900">10 Seconds</option>
               </select>
             </div>
 
             <div>
-              <label className="block text-xs font-semibold text-slate-300 mb-1.5">
+              <label htmlFor="secret-key" className="block text-xs font-semibold text-slate-300 mb-1.5 cursor-pointer">
                 X-Ketari-Secret Key (Optional)
               </label>
               <input
+                id="secret-key"
                 type="password"
                 value={secretKey}
                 onChange={(e) => setSecretKey(e.target.value)}
                 placeholder="sk_live_..."
-                className="w-full px-3.5 py-2.5 rounded-xl bg-slate-950 border border-slate-800 text-slate-100 text-xs font-mono focus:outline-none focus:border-emerald-500 transition-all shadow-[inset_2px_2px_4px_rgba(0,0,0,0.4)]"
+                className="w-full px-3.5 py-2.5 rounded-xl bg-slate-950 border border-slate-800 text-slate-100 text-xs font-mono focus:outline-none focus:border-emerald-500 focus:ring-1 focus:ring-emerald-500 transition-all shadow-[inset_2px_2px_4px_rgba(0,0,0,0.4)]"
               />
             </div>
           </div>
 
           {/* Authorization Bearer Header */}
           <div>
-            <label className="block text-xs font-semibold text-slate-300 mb-1.5">
+            <label htmlFor="auth-header" className="block text-xs font-semibold text-slate-300 mb-1.5 cursor-pointer">
               Custom Authorization Header (Optional)
             </label>
             <input
+              id="auth-header"
               type="text"
               value={authHeader}
               onChange={(e) => setAuthHeader(e.target.value)}
               placeholder="Bearer your-api-token"
-              className="w-full px-3.5 py-2.5 rounded-xl bg-slate-950 border border-slate-800 text-slate-100 text-xs font-mono focus:outline-none focus:border-emerald-500 transition-all shadow-[inset_2px_2px_4px_rgba(0,0,0,0.4)]"
+              className="w-full px-3.5 py-2.5 rounded-xl bg-slate-950 border border-slate-800 text-slate-100 text-xs font-mono focus:outline-none focus:border-emerald-500 focus:ring-1 focus:ring-emerald-500 transition-all shadow-[inset_2px_2px_4px_rgba(0,0,0,0.4)]"
             />
           </div>
 
           {/* Modal Footer Controls */}
-          <div className="pt-4 border-t border-slate-800 flex items-center justify-end space-x-3">
+          <div className="pt-4 border-t border-slate-800 flex items-center justify-end space-x-3 select-none">
             <button
               type="button"
               onClick={closeAddModal}
-              className="px-4 py-2.5 rounded-xl bg-slate-800 hover:bg-slate-700 text-slate-300 text-xs font-semibold transition-all"
+              className="px-4 py-2.5 rounded-xl bg-slate-800 hover:bg-slate-700 text-slate-300 text-xs font-semibold transition-all active:scale-95 cursor-pointer"
             >
               Cancel
             </button>
             <button
               type="submit"
-              className="px-5 py-2.5 rounded-xl bg-emerald-600 hover:bg-emerald-500 text-white text-xs font-semibold transition-all shadow-[3px_3px_8px_rgba(16,185,129,0.3)] active:scale-95"
+              className="px-5 py-2.5 rounded-xl bg-emerald-600 hover:bg-emerald-500 text-white text-xs font-semibold transition-all shadow-[3px_3px_8px_rgba(16,185,129,0.3)] active:scale-95 cursor-pointer"
             >
               {editingService ? 'Save Changes' : 'Register Service'}
             </button>

@@ -1,6 +1,5 @@
 import React, { useState } from 'react';
-import { Shield, Lock, UserCheck, Mail, KeyRound, Wand2, ArrowRight } from 'lucide-react';
-import { Alert, Button, Card } from 'flowbite-react';
+import { Shield, Lock, UserCheck, AlertCircle, Mail, KeyRound, Wand2, ArrowRight } from 'lucide-react';
 import { useAuth } from '../context/AuthContext';
 
 export const LoginPage: React.FC = () => {
@@ -67,22 +66,22 @@ export const LoginPage: React.FC = () => {
         <div className="absolute -bottom-40 -right-40 w-96 h-96 bg-indigo-600/10 rounded-full blur-3xl" />
       </div>
 
-      <Card className="w-full max-w-md bg-slate-900/90 border border-slate-800 rounded-3xl p-6 sm:p-8 shadow-[8px_8px_32px_rgba(0,0,0,0.8)] relative backdrop-blur-xl z-10">
+      <div className="w-full max-w-md bg-slate-900/90 border border-slate-800 rounded-3xl p-6 sm:p-8 shadow-[8px_8px_32px_rgba(0,0,0,0.8)] relative backdrop-blur-xl z-10">
         
         {/* Brand Header */}
-        <div className="text-center mb-6">
+        <div className="text-center mb-6 select-none">
           <div className="w-14 h-14 rounded-3xl bg-gradient-to-tr from-emerald-500 to-indigo-600 p-0.5 mx-auto mb-3 shadow-[4px_4px_16px_rgba(0,0,0,0.4)]">
             <div className="w-full h-full bg-slate-900 rounded-[22px] flex items-center justify-center">
               <Shield className="w-7 h-7 text-emerald-400" />
             </div>
           </div>
 
-          <h1 className="text-xl font-bold text-slate-100 tracking-tight mb-1">KetariSentry</h1>
+          <h1 className="text-xl font-bold text-slate-100 tracking-tight mb-1">Ketarisentry</h1>
           <p className="text-xs text-slate-400 font-medium">Central Health & Queue Telemetry Hub</p>
         </div>
 
         {/* Tab Switcher: Password vs Magic Link */}
-        <div className="grid grid-cols-2 gap-1.5 p-1 bg-slate-950/80 border border-slate-800/80 rounded-2xl mb-6">
+        <div className="grid grid-cols-2 gap-1.5 p-1 bg-slate-950/80 border border-slate-800/80 rounded-2xl mb-6 select-none">
           <button
             type="button"
             onClick={() => {
@@ -95,6 +94,7 @@ export const LoginPage: React.FC = () => {
                 ? 'bg-slate-800 text-slate-100 shadow-sm'
                 : 'text-slate-400 hover:text-slate-200'
             }`}
+            aria-label="Switch to Email & Password Tab"
           >
             <KeyRound className="w-3.5 h-3.5" />
             <span>Email & Password</span>
@@ -112,71 +112,77 @@ export const LoginPage: React.FC = () => {
                 ? 'bg-slate-800 text-slate-100 shadow-sm'
                 : 'text-slate-400 hover:text-slate-200'
             }`}
+            aria-label="Switch to Magic Link Tab"
           >
             <Wand2 className="w-3.5 h-3.5 text-indigo-400" />
             <span>Magic Link</span>
           </button>
         </div>
 
-        {/* Flowbite Feedback Alerts */}
+        {/* Feedback Alerts */}
         {errorMessage && (
-          <Alert color="failure" className="mb-4 rounded-2xl">
-            <span className="text-xs font-semibold">{errorMessage}</span>
-          </Alert>
+          <div className="mb-4 p-3 rounded-2xl bg-rose-950/60 border border-rose-800/60 text-rose-300 text-xs flex items-center space-x-2">
+            <AlertCircle className="w-4 h-4 text-rose-400 shrink-0" />
+            <span>{errorMessage}</span>
+          </div>
         )}
 
         {successMessage && (
-          <Alert color="success" className="mb-4 rounded-2xl">
-            <span className="text-xs font-semibold">{successMessage}</span>
-          </Alert>
+          <div className="mb-4 p-3 rounded-2xl bg-emerald-950/60 border border-emerald-800/60 text-emerald-300 text-xs flex items-center space-x-2">
+            <Shield className="w-4 h-4 text-emerald-400 shrink-0" />
+            <span>{successMessage}</span>
+          </div>
         )}
 
         {/* Tab 1: Password Form */}
         {activeTab === 'password' && (
           <form onSubmit={handlePasswordSubmit} className="space-y-4">
             <div>
-              <label className="block text-xs font-semibold text-slate-300 mb-1.5">Email Address</label>
+              <label htmlFor="login-email" className="block text-xs font-semibold text-slate-300 mb-1.5 cursor-pointer">
+                Email Address
+              </label>
               <div className="relative">
-                <Mail className="w-4 h-4 text-slate-400 absolute left-3.5 top-1/2 -translate-y-1/2" />
+                <Mail className="w-4 h-4 text-slate-400 absolute left-3.5 top-1/2 -translate-y-1/2 pointer-events-none" />
                 <input
+                  id="login-email"
                   type="email"
                   required
                   value={email}
                   onChange={(e) => setEmail(e.target.value)}
                   placeholder="superadmin@ketarisentry.io"
-                  className="w-full pl-10 pr-4 py-2.5 rounded-2xl bg-slate-950 border border-slate-800 text-xs text-slate-100 placeholder-slate-500 focus:outline-none focus:border-emerald-500 transition-all shadow-[inset_2px_2px_4px_rgba(0,0,0,0.4)]"
+                  className="w-full pl-10 pr-4 py-2.5 rounded-2xl bg-slate-950 border border-slate-800 text-xs text-slate-100 placeholder-slate-500 focus:outline-none focus:border-emerald-500 focus:ring-1 focus:ring-emerald-500 transition-all shadow-[inset_2px_2px_4px_rgba(0,0,0,0.4)]"
                 />
               </div>
             </div>
 
             <div>
-              <label className="block text-xs font-semibold text-slate-300 mb-1.5">Password</label>
+              <label htmlFor="login-password" className="block text-xs font-semibold text-slate-300 mb-1.5 cursor-pointer">
+                Password
+              </label>
               <div className="relative">
-                <Lock className="w-4 h-4 text-slate-400 absolute left-3.5 top-1/2 -translate-y-1/2" />
+                <Lock className="w-4 h-4 text-slate-400 absolute left-3.5 top-1/2 -translate-y-1/2 pointer-events-none" />
                 <input
+                  id="login-password"
                   type="password"
                   required
                   value={password}
                   onChange={(e) => setPassword(e.target.value)}
                   placeholder="••••••••"
-                  className="w-full pl-10 pr-4 py-2.5 rounded-2xl bg-slate-950 border border-slate-800 text-xs text-slate-100 placeholder-slate-500 focus:outline-none focus:border-emerald-500 transition-all shadow-[inset_2px_2px_4px_rgba(0,0,0,0.4)]"
+                  className="w-full pl-10 pr-4 py-2.5 rounded-2xl bg-slate-950 border border-slate-800 text-xs text-slate-100 placeholder-slate-500 focus:outline-none focus:border-emerald-500 focus:ring-1 focus:ring-emerald-500 transition-all shadow-[inset_2px_2px_4px_rgba(0,0,0,0.4)]"
                 />
               </div>
             </div>
 
-            <Button
+            <button
               type="submit"
               disabled={isLoading}
-              color="emerald"
-              className="w-full py-1.5 rounded-2xl font-bold text-xs shadow-[4px_4px_12px_rgba(0,0,0,0.3)]"
+              className="w-full py-3 px-4 rounded-2xl bg-gradient-to-r from-emerald-600 to-emerald-500 hover:from-emerald-500 hover:to-emerald-400 text-white font-bold text-xs flex items-center justify-center space-x-2 transition-all shadow-[4px_4px_12px_rgba(0,0,0,0.3)] active:scale-[0.98] cursor-pointer disabled:opacity-50"
             >
-              <span className="flex items-center justify-center space-x-2">
-                <span>{isLoading ? 'Authenticating...' : 'Sign In'}</span>
-                <ArrowRight className="w-4 h-4" />
-              </span>
-            </Button>
+              <span>{isLoading ? 'Authenticating...' : 'Sign In'}</span>
+              <ArrowRight className="w-4 h-4" />
+            </button>
 
-            <div className="p-3 rounded-2xl bg-slate-950/60 border border-slate-800/80 text-[11px] text-slate-400 text-center font-mono space-y-1">
+            <div className="p-3 rounded-2xl bg-slate-950/60 border border-slate-800/80 text-[11px] text-slate-400 text-center font-mono space-y-1 select-none">
               <div>Seeded Superadmin: <strong className="text-slate-200">superadmin@ketarisentry.io</strong></div>
               <div>Password: <strong className="text-slate-200">superadminpassword</strong></div>
             </div>
@@ -187,16 +193,19 @@ export const LoginPage: React.FC = () => {
         {activeTab === 'magic-link' && (
           <form onSubmit={handleMagicLinkSubmit} className="space-y-4">
             <div>
-              <label className="block text-xs font-semibold text-slate-300 mb-1.5">Registered Email Address</label>
+              <label htmlFor="magic-email" className="block text-xs font-semibold text-slate-300 mb-1.5 cursor-pointer">
+                Registered Email Address
+              </label>
               <div className="relative">
-                <Mail className="w-4 h-4 text-slate-400 absolute left-3.5 top-1/2 -translate-y-1/2" />
+                <Mail className="w-4 h-4 text-slate-400 absolute left-3.5 top-1/2 -translate-y-1/2 pointer-events-none" />
                 <input
+                  id="magic-email"
                   type="email"
                   required
                   value={email}
                   onChange={(e) => setEmail(e.target.value)}
                   placeholder="superadmin@ketarisentry.io"
-                  className="w-full pl-10 pr-4 py-2.5 rounded-2xl bg-slate-950 border border-slate-800 text-xs text-slate-100 placeholder-slate-500 focus:outline-none focus:border-indigo-500 transition-all shadow-[inset_2px_2px_4px_rgba(0,0,0,0.4)]"
+                  className="w-full pl-10 pr-4 py-2.5 rounded-2xl bg-slate-950 border border-slate-800 text-xs text-slate-100 placeholder-slate-500 focus:outline-none focus:border-indigo-500 focus:ring-1 focus:ring-indigo-500 transition-all shadow-[inset_2px_2px_4px_rgba(0,0,0,0.4)]"
                 />
               </div>
               <p className="text-[11px] text-slate-400 mt-1">
@@ -204,24 +213,21 @@ export const LoginPage: React.FC = () => {
               </p>
             </div>
 
-            <Button
+            <button
               type="submit"
               disabled={isLoading}
-              color="purple"
-              className="w-full py-1.5 rounded-2xl font-bold text-xs shadow-[4px_4px_12px_rgba(0,0,0,0.3)]"
+              className="w-full py-3 px-4 rounded-2xl bg-gradient-to-r from-indigo-600 to-indigo-500 hover:from-indigo-500 hover:to-indigo-400 text-white font-bold text-xs flex items-center justify-center space-x-2 transition-all shadow-[4px_4px_12px_rgba(0,0,0,0.3)] active:scale-[0.98] cursor-pointer disabled:opacity-50"
             >
-              <span className="flex items-center justify-center space-x-2">
-                <Wand2 className="w-4 h-4 text-indigo-200" />
-                <span>{isLoading ? 'Authorizing Magic Link...' : 'Authorize Magic Link'}</span>
-              </span>
-            </Button>
+              <Wand2 className="w-4 h-4 text-indigo-200" />
+              <span>{isLoading ? 'Authorizing Magic Link...' : 'Authorize Magic Link'}</span>
+            </button>
           </form>
         )}
 
         {/* Development Sandbox Demo Roles Section */}
         {isSandboxAllowed && (
           <>
-            <div className="relative my-6">
+            <div className="relative my-6 select-none">
               <div className="absolute inset-0 flex items-center">
                 <div className="w-full border-t border-slate-800" />
               </div>
@@ -230,7 +236,7 @@ export const LoginPage: React.FC = () => {
               </div>
             </div>
 
-            <div className="space-y-2">
+            <div className="space-y-2 select-none">
               <button
                 type="button"
                 onClick={() => loginWithSandbox('admin')}
@@ -258,10 +264,10 @@ export const LoginPage: React.FC = () => {
           </>
         )}
         
-        <p className="mt-6 text-[11px] text-slate-400 text-center">
-          Protected System &bull; KetariSentry Telemetry Hub
+        <p className="mt-6 text-[11px] text-slate-400 text-center select-none">
+          Protected System &bull; Ketarisentry Telemetry Hub
         </p>
-      </Card>
+      </div>
     </div>
   );
 };

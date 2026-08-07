@@ -10,7 +10,6 @@ import { AuditLogModal } from './components/AuditLogModal';
 import { IncidentTimeline } from './components/IncidentTimeline';
 import { 
   Search, 
-  SlidersHorizontal, 
   Server, 
   Activity, 
   Layers, 
@@ -73,129 +72,141 @@ const DashboardContent: React.FC = () => {
       <main className="flex-1 max-w-7xl w-full mx-auto px-4 sm:px-6 lg:px-8 py-8 space-y-8">
         
         {/* Fleet Metrics Summary Banner */}
-        <section className="grid grid-cols-2 lg:grid-cols-5 gap-3.5">
+        <section className="grid grid-cols-2 lg:grid-cols-5 gap-4 select-none">
           {/* Total Monitored Services */}
-          <div className="p-4 rounded-3xl bg-slate-900/90 border border-slate-800/80 shadow-[6px_6px_16px_rgba(0,0,0,0.4)] flex items-center space-x-3.5">
-            <div className="w-10 h-10 rounded-2xl bg-indigo-950/80 border border-indigo-800/60 flex items-center justify-center text-indigo-400">
-              <Server className="w-5 h-5" />
-            </div>
-            <div>
-              <span className="text-xs font-semibold text-slate-400 block">Services Fleet</span>
-              <span className="text-lg font-bold text-slate-100">{totalServices}</span>
+          <div className="rounded-3xl p-5 bg-slate-900/90 border border-slate-800/80 shadow-[6px_6px_16px_rgba(0,0,0,0.4)] hover:-translate-y-1 transition-all">
+            <div className="flex items-center space-x-3.5">
+              <div className="w-10 h-10 rounded-2xl bg-indigo-950/80 border border-indigo-800/60 flex items-center justify-center text-indigo-400">
+                <Server className="w-5 h-5" />
+              </div>
+              <div>
+                <span className="text-xs font-semibold text-slate-400 block">Services Fleet</span>
+                <span className="text-xl font-extrabold text-slate-100">{totalServices}</span>
+              </div>
             </div>
           </div>
 
           {/* Average Latency */}
-          <div className="p-4 rounded-3xl bg-slate-900/90 border border-slate-800/80 shadow-[6px_6px_16px_rgba(0,0,0,0.4)] flex items-center space-x-3.5">
-            <div className="w-10 h-10 rounded-2xl bg-emerald-950/80 border border-emerald-800/60 flex items-center justify-center text-emerald-400">
-              <Activity className="w-5 h-5" />
-            </div>
-            <div>
-              <span className="text-xs font-semibold text-slate-400 block">Avg Response</span>
-              <span className="text-lg font-mono font-bold text-emerald-400">{avgLatency} ms</span>
+          <div className="rounded-3xl p-5 bg-slate-900/90 border border-slate-800/80 shadow-[6px_6px_16px_rgba(0,0,0,0.4)] hover:-translate-y-1 transition-all">
+            <div className="flex items-center space-x-3.5">
+              <div className="w-10 h-10 rounded-2xl bg-emerald-950/80 border border-emerald-800/60 flex items-center justify-center text-emerald-400">
+                <Activity className="w-5 h-5" />
+              </div>
+              <div>
+                <span className="text-xs font-semibold text-slate-400 block">Avg Response</span>
+                <span className="text-xl font-mono font-extrabold text-emerald-400">{avgLatency} ms</span>
+              </div>
             </div>
           </div>
 
           {/* Total Pending Queue Jobs */}
-          <div className="p-4 rounded-3xl bg-slate-900/90 border border-slate-800/80 shadow-[6px_6px_16px_rgba(0,0,0,0.4)] flex items-center space-x-3.5">
-            <div className="w-10 h-10 rounded-2xl bg-amber-950/80 border border-amber-800/60 flex items-center justify-center text-amber-400">
-              <Layers className="w-5 h-5" />
-            </div>
-            <div>
-              <span className="text-xs font-semibold text-slate-400 block">Pending Queue Jobs</span>
-              <span className="text-lg font-mono font-bold text-amber-300">{totalPendingJobs}</span>
+          <div className="rounded-3xl p-5 bg-slate-900/90 border border-slate-800/80 shadow-[6px_6px_16px_rgba(0,0,0,0.4)] hover:-translate-y-1 transition-all">
+            <div className="flex items-center space-x-3.5">
+              <div className="w-10 h-10 rounded-2xl bg-amber-950/80 border border-amber-800/60 flex items-center justify-center text-amber-400">
+                <Layers className="w-5 h-5" />
+              </div>
+              <div>
+                <span className="text-xs font-semibold text-slate-400 block">Pending Queue Jobs</span>
+                <span className="text-xl font-mono font-extrabold text-amber-300">{totalPendingJobs}</span>
+              </div>
             </div>
           </div>
 
           {/* Failed Jobs (24h) */}
-          <div className="p-4 rounded-3xl bg-slate-900/90 border border-slate-800/80 shadow-[6px_6px_16px_rgba(0,0,0,0.4)] flex items-center space-x-3.5">
-            <div className="w-10 h-10 rounded-2xl bg-rose-950/80 border border-rose-800/60 flex items-center justify-center text-rose-400">
-              <AlertOctagon className="w-5 h-5" />
-            </div>
-            <div>
-              <span className="text-xs font-semibold text-slate-400 block">Failed Jobs (24h)</span>
-              <span className={`text-lg font-mono font-bold ${totalFailedJobs24h > 0 ? 'text-rose-400' : 'text-slate-200'}`}>
-                {totalFailedJobs24h}
-              </span>
+          <div className="rounded-3xl p-5 bg-slate-900/90 border border-slate-800/80 shadow-[6px_6px_16px_rgba(0,0,0,0.4)] hover:-translate-y-1 transition-all">
+            <div className="flex items-center space-x-3.5">
+              <div className="w-10 h-10 rounded-2xl bg-rose-950/80 border border-rose-800/60 flex items-center justify-center text-rose-400">
+                <AlertOctagon className="w-5 h-5" />
+              </div>
+              <div>
+                <span className="text-xs font-semibold text-slate-400 block">Failed Jobs (24h)</span>
+                <span className={`text-xl font-mono font-extrabold ${totalFailedJobs24h > 0 ? 'text-rose-400' : 'text-slate-200'}`}>
+                  {totalFailedJobs24h}
+                </span>
+              </div>
             </div>
           </div>
 
           {/* SSL Expiry Warnings */}
-          <div className="col-span-2 lg:col-span-1 p-4 rounded-3xl bg-slate-900/90 border border-slate-800/80 shadow-[6px_6px_16px_rgba(0,0,0,0.4)] flex items-center space-x-3.5">
-            <div className="w-10 h-10 rounded-2xl bg-emerald-950/80 border border-emerald-800/60 flex items-center justify-center text-emerald-400">
-              <Lock className="w-5 h-5" />
-            </div>
-            <div>
-              <span className="text-xs font-semibold text-slate-400 block">SSL Warnings</span>
-              <span className={`text-lg font-bold ${sslWarningCount > 0 ? 'text-amber-400' : 'text-emerald-400'}`}>
-                {sslWarningCount > 0 ? `${sslWarningCount} Expiring` : 'All Valid'}
-              </span>
+          <div className="col-span-2 lg:col-span-1 rounded-3xl p-5 bg-slate-900/90 border border-slate-800/80 shadow-[6px_6px_16px_rgba(0,0,0,0.4)] hover:-translate-y-1 transition-all">
+            <div className="flex items-center space-x-3.5">
+              <div className="w-10 h-10 rounded-2xl bg-emerald-950/80 border border-emerald-800/60 flex items-center justify-center text-emerald-400">
+                <Lock className="w-5 h-5" />
+              </div>
+              <div>
+                <span className="text-xs font-semibold text-slate-400 block">SSL Warnings</span>
+                <span className={`text-xl font-extrabold ${sslWarningCount > 0 ? 'text-amber-400' : 'text-emerald-400'}`}>
+                  {sslWarningCount > 0 ? `${sslWarningCount} Expiring` : 'All Valid'}
+                </span>
+              </div>
             </div>
           </div>
         </section>
 
         {/* Search & Filter Controls Toolbar */}
-        <section className="bg-slate-900/90 rounded-3xl p-4 border border-slate-800/80 shadow-[6px_6px_16px_rgba(0,0,0,0.4)] flex flex-wrap items-center justify-between gap-3">
-          {/* Search Input */}
-          <div className="relative flex-1 min-w-[240px]">
-            <Search className="w-4 h-4 text-slate-400 absolute left-3.5 top-1/2 -translate-y-1/2" />
-            <input
-              type="text"
-              value={searchQuery}
-              onChange={(e) => setSearchQuery(e.target.value)}
-              placeholder="Search services by name or endpoint URL..."
-              className="w-full pl-10 pr-4 py-2.5 rounded-2xl bg-slate-950 border border-slate-800 text-xs text-slate-100 placeholder-slate-500 focus:outline-none focus:border-emerald-500 transition-all shadow-[inset_2px_2px_4px_rgba(0,0,0,0.4)]"
-            />
-          </div>
+        <div className="bg-slate-900/90 rounded-3xl p-4 border border-slate-800/80 shadow-[6px_6px_16px_rgba(0,0,0,0.4)]">
+          <div className="flex flex-wrap items-center justify-between gap-3">
+            {/* Search Input */}
+            <div className="relative flex-1 min-w-[260px]">
+              <Search className="w-4 h-4 text-slate-400 absolute left-3.5 top-1/2 -translate-y-1/2 pointer-events-none" />
+              <input
+                type="text"
+                value={searchQuery}
+                onChange={(e) => setSearchQuery(e.target.value)}
+                placeholder="Search services by name or endpoint URL..."
+                className="w-full pl-10 pr-4 py-2.5 rounded-2xl bg-slate-950 border border-slate-800 text-xs text-slate-100 placeholder-slate-500 focus:outline-none focus:border-emerald-500 transition-all shadow-[inset_2px_2px_4px_rgba(0,0,0,0.4)]"
+              />
+            </div>
 
-          {/* Filters */}
-          <div className="flex items-center space-x-2.5">
-            <div className="flex items-center space-x-1.5 px-3 py-1.5 rounded-2xl bg-slate-950 border border-slate-800 text-xs">
-              <SlidersHorizontal className="w-3.5 h-3.5 text-slate-400" />
+            {/* Environment & Status Filter Dropdowns */}
+            <div className="flex items-center space-x-2.5 select-none">
               <select
                 value={selectedEnv}
                 onChange={(e) => setSelectedEnv(e.target.value)}
-                className="bg-transparent text-slate-300 focus:outline-none font-medium cursor-pointer"
+                className="py-2.5 px-3 rounded-2xl bg-slate-950 border border-slate-800 text-xs text-slate-300 focus:outline-none focus:border-emerald-500 cursor-pointer shadow-[inset_2px_2px_4px_rgba(0,0,0,0.4)]"
+                aria-label="Filter by Environment"
               >
-                <option value="all" className="bg-slate-900">Env: All</option>
-                <option value="production" className="bg-slate-900">Production</option>
-                <option value="staging" className="bg-slate-900">Staging</option>
-                <option value="local" className="bg-slate-900">Local</option>
+                <option value="all">Env: All</option>
+                <option value="production">Production</option>
+                <option value="staging">Staging</option>
+                <option value="local">Local</option>
               </select>
-            </div>
 
-            <div className="flex items-center space-x-1.5 px-3 py-1.5 rounded-2xl bg-slate-950 border border-slate-800 text-xs">
               <select
                 value={selectedStatus}
                 onChange={(e) => setSelectedStatus(e.target.value)}
-                className="bg-transparent text-slate-300 focus:outline-none font-medium cursor-pointer"
+                className="py-2.5 px-3 rounded-2xl bg-slate-950 border border-slate-800 text-xs text-slate-300 focus:outline-none focus:border-emerald-500 cursor-pointer shadow-[inset_2px_2px_4px_rgba(0,0,0,0.4)]"
+                aria-label="Filter by Health Status"
               >
-                <option value="all" className="bg-slate-900">Status: All</option>
-                <option value="operational" className="bg-slate-900">Operational</option>
-                <option value="degraded" className="bg-slate-900">Degraded</option>
-                <option value="outage" className="bg-slate-900">Outage</option>
-                <option value="maintenance" className="bg-slate-900">Muted</option>
+                <option value="all">Status: All</option>
+                <option value="operational">Operational</option>
+                <option value="degraded">Degraded</option>
+                <option value="outage">Outage</option>
+                <option value="maintenance">Muted</option>
               </select>
             </div>
           </div>
-        </section>
+        </div>
 
         {/* Services Grid */}
         <section>
           {filteredServices.length === 0 ? (
-            <div className="bg-slate-900/90 rounded-3xl p-12 border border-slate-800/80 shadow-[6px_6px_16px_rgba(0,0,0,0.4)] text-center">
-              <Server className="w-10 h-10 text-slate-400 mx-auto mb-3 opacity-60" />
-              <h3 className="text-base font-bold text-slate-200">No Services Monitored</h3>
+            <div className="bg-slate-900/90 rounded-3xl p-12 border border-slate-800/80 shadow-[6px_6px_16px_rgba(0,0,0,0.4)] text-center select-none">
+              <Server className="w-12 h-12 text-slate-500 mx-auto mb-3 opacity-60" />
+              <h3 className="text-base font-extrabold text-slate-200">No Services Monitored</h3>
               <p className="text-xs text-slate-400 mt-1 max-w-sm mx-auto">
                 Your monitoring fleet is empty. Add your first Laravel /ketari/health endpoint to start tracking service status.
               </p>
-              <button
-                onClick={() => openAddModal()}
-                className="mt-4 px-4 py-2 rounded-xl bg-emerald-600 hover:bg-emerald-500 text-white text-xs font-semibold inline-flex items-center space-x-1.5 cursor-pointer"
-              >
-                <Plus className="w-4 h-4" />
-                <span>Add Target Service</span>
-              </button>
+              <div className="mt-4 flex justify-center">
+                <button
+                  onClick={() => openAddModal()}
+                  className="flex items-center space-x-1.5 px-4 py-2.5 rounded-xl bg-emerald-600 hover:bg-emerald-500 text-white font-bold text-xs shadow-[3px_3px_8px_rgba(16,185,129,0.3)] active:scale-95 cursor-pointer transition-all"
+                  aria-label="Add Target Service Endpoint"
+                >
+                  <Plus className="w-4 h-4" />
+                  <span>Add Target Service</span>
+                </button>
+              </div>
             </div>
           ) : (
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-2 gap-6">
@@ -217,8 +228,8 @@ const DashboardContent: React.FC = () => {
       </main>
 
       {/* Footer */}
-      <footer className="border-t border-slate-800/80 py-6 text-center text-xs text-slate-400">
-        <p>KetariSentry &copy; {new Date().getFullYear()} &bull; Central Health & Queue Telemetry Hub</p>
+      <footer className="border-t border-slate-800/80 py-6 text-center text-xs text-slate-400 select-none">
+        <p>Ketarisentry &copy; {new Date().getFullYear()} &bull; Central Health & Queue Telemetry Hub</p>
       </footer>
 
       {/* Modals & Drawers */}

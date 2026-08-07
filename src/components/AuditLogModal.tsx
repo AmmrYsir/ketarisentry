@@ -32,7 +32,7 @@ export const AuditLogModal: React.FC<AuditLogModalProps> = ({ isOpen, onClose })
       <div className="w-full max-w-3xl bg-slate-900 border border-slate-800 rounded-3xl p-6 shadow-[8px_8px_24px_rgba(0,0,0,0.6)] relative my-8">
         
         {/* Header */}
-        <div className="flex items-center justify-between border-b border-slate-800/80 pb-4 mb-5">
+        <div className="flex items-center justify-between border-b border-slate-800/80 pb-4 mb-5 select-none">
           <div className="flex items-center space-x-3">
             <div className="w-10 h-10 rounded-2xl bg-indigo-950/80 border border-indigo-800/60 flex items-center justify-center text-indigo-400">
               <FileText className="w-5 h-5" />
@@ -46,14 +46,16 @@ export const AuditLogModal: React.FC<AuditLogModalProps> = ({ isOpen, onClose })
           <div className="flex items-center space-x-2">
             <button
               onClick={loadLogs}
-              className="p-2 rounded-xl bg-slate-800 text-slate-300 hover:text-white hover:bg-slate-700 transition-all"
+              className="p-2 rounded-xl bg-slate-800 text-slate-300 hover:text-white hover:bg-slate-700 active:scale-95 transition-all cursor-pointer"
               title="Refresh Audit Logs"
+              aria-label="Refresh Audit Logs"
             >
               <RefreshCw className={`w-4 h-4 ${loading ? 'animate-spin' : ''}`} />
             </button>
             <button
               onClick={onClose}
-              className="p-2 rounded-xl bg-slate-800 text-slate-400 hover:text-white hover:bg-slate-700 transition-all"
+              className="p-2 rounded-xl bg-slate-800 text-slate-400 hover:text-white hover:bg-slate-700 active:scale-95 transition-all cursor-pointer"
+              aria-label="Close Logs Modal"
             >
               <X className="w-5 h-5" />
             </button>
@@ -62,7 +64,7 @@ export const AuditLogModal: React.FC<AuditLogModalProps> = ({ isOpen, onClose })
 
         {/* Audit Log Entries List */}
         {logs.length === 0 ? (
-          <div className="p-8 text-center bg-slate-950/40 rounded-2xl border border-slate-800/50">
+          <div className="p-8 text-center bg-slate-950/40 rounded-2xl border border-slate-800/50 select-none">
             <ShieldAlert className="w-8 h-8 text-slate-400 mx-auto mb-2 opacity-60" />
             <p className="text-sm font-semibold text-slate-200">No Audit Events Logged Yet</p>
             <p className="text-xs text-slate-400 mt-1">Audit log records will be created automatically as users log in and configure services.</p>
@@ -75,11 +77,11 @@ export const AuditLogModal: React.FC<AuditLogModalProps> = ({ isOpen, onClose })
                 className="p-3.5 rounded-2xl bg-slate-950/60 border border-slate-800/60 flex flex-col sm:flex-row sm:items-center justify-between gap-2 text-xs"
               >
                 <div className="flex items-start space-x-3">
-                  <div className="w-7 h-7 rounded-xl bg-slate-800 flex items-center justify-center text-slate-300 font-bold text-[10px] flex-shrink-0 mt-0.5">
+                  <div className="w-7 h-7 rounded-xl bg-slate-800 flex items-center justify-center text-slate-300 font-bold text-[10px] flex-shrink-0 mt-0.5 select-none">
                     <User className="w-3.5 h-3.5 text-indigo-400" />
                   </div>
                   <div>
-                    <div className="flex items-center space-x-2">
+                    <div className="flex items-center space-x-2 select-none">
                       <span className="font-bold text-slate-200">{log.user_name}</span>
                       <span className="text-[10px] font-mono px-2 py-0.5 rounded bg-indigo-950 text-indigo-300 border border-indigo-800/40 uppercase">
                         {log.action}
@@ -89,7 +91,7 @@ export const AuditLogModal: React.FC<AuditLogModalProps> = ({ isOpen, onClose })
                   </div>
                 </div>
 
-                <span className="text-[11px] font-mono text-slate-400 flex items-center space-x-1 flex-shrink-0 self-end sm:self-center">
+                <span className="text-[11px] font-mono text-slate-400 flex items-center space-x-1 flex-shrink-0 self-end sm:self-center select-none">
                   <Clock className="w-3.5 h-3.5" />
                   <span>{new Date(log.timestamp).toLocaleString()}</span>
                 </span>

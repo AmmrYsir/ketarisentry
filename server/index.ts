@@ -4,7 +4,7 @@ import type { ServiceConfig, AuthUser } from '../src/types';
 
 const PORT = process.env.PORT || 3001;
 
-console.log(`🛡️ KetariSentry Bun + SQLite API Server booting on port ${PORT}...`);
+console.log(`🛡️ Ketarisentry Bun + SQLite API Server booting on port ${PORT}...`);
 
 Bun.serve({
   port: Number(PORT),

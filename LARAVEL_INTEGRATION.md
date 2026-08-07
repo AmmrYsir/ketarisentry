@@ -1,17 +1,17 @@
-# 🐘 Laravel Integration Guide for KetariSentry
+# 🐘 Laravel Integration Guide for Ketarisentry
 
-This step-by-step guide explains how to integrate any **Laravel application** (Laravel 8, 9, 10, 11, 12+) with **KetariSentry** to monitor database health, Redis connectivity, Horizon queues, failed job traces, system memory, and cron heartbeats.
+This step-by-step guide explains how to integrate any **Laravel application** (Laravel 8, 9, 10, 11, 12+) with **Ketarisentry** to monitor database health, Redis connectivity, Horizon queues, failed job traces, system memory, and cron heartbeats.
 
 ---
 
 ## 📋 Overview of Integration
 
-KetariSentry uses **Pull Polling** to periodically probe a single lightweight HTTP GET endpoint on your Laravel application (e.g. `https://your-laravel-app.com/api/ketari/health`).
+Ketarisentry uses **Pull Polling** to periodically probe a single lightweight HTTP GET endpoint on your Laravel application (e.g. `https://your-laravel-app.com/api/ketari/health`).
 
 ### Key Invariants for Laravel Applications:
-1. **Zero Database Overload**: Results are cached for 10 seconds in Laravel (`Cache::remember()`) so frequent health pings from KetariSentry consume zero extra database overhead.
+1. **Zero Database Overload**: Results are cached for 10 seconds in Laravel (`Cache::remember()`) so frequent health pings from Ketarisentry consume zero extra database overhead.
 2. **Security**: Protected via an optional `X-Ketari-Secret` HTTP header.
-3. **CORS Support**: Endpoint returns `Access-Control-Allow-Origin: *` so KetariSentry's browser dashboard can poll without CORS restrictions.
+3. **CORS Support**: Endpoint returns `Access-Control-Allow-Origin: *` so Ketarisentry's browser dashboard can poll without CORS restrictions.
 
 ---
 
@@ -245,9 +245,9 @@ Expected Response (`HTTP 200 OK`):
 
 ---
 
-### Step 6: Register Service in KetariSentry
+### Step 6: Register Service in Ketarisentry
 
-1. Open **KetariSentry Hub** in your browser (`http://localhost:5173`).
+1. Open **Ketarisentry Hub** in your browser (`http://localhost:5173`).
 2. Click **+ Add Service** in the top navigation bar.
 3. Enter your details:
    - **Service Name**: `Laravel Store API`
@@ -257,7 +257,7 @@ Expected Response (`HTTP 200 OK`):
    - **X-Ketari-Secret Key**: `sk_live_your_secret_key_here`
 4. Click **Register Service**.
 
-KetariSentry will instantly start polling your Laravel service!
+Ketarisentry will instantly start polling your Laravel service!
 
 ---
 
@@ -283,4 +283,4 @@ $checks['s3_storage'] = [
 ];
 ```
 
-KetariSentry will automatically parse and render your custom check with high-contrast status pills!
+Ketarisentry will automatically parse and render your custom check with high-contrast status pills!

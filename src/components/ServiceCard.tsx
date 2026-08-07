@@ -39,7 +39,7 @@ export const ServiceCard: React.FC<ServiceCardProps> = ({ config, result }) => {
 
   let status: HealthStatus = 'operational';
   if (!isEnabled) {
-    status = 'maintenance'; // Disabled state
+    status = 'maintenance';
   } else if (isMuted) {
     status = 'maintenance';
   } else {
@@ -54,7 +54,7 @@ export const ServiceCard: React.FC<ServiceCardProps> = ({ config, result }) => {
   const failedJobsCount = queue?.failed_jobs_24h || 0;
   const pendingJobs = queue?.pending_jobs || 0;
 
-  // Status Styling Logic
+  // Status Styling
   let statusBg = 'bg-emerald-950/60 border-emerald-800/60 text-emerald-400';
   let statusDot = 'bg-emerald-500';
   let statusText = 'Operational';
@@ -115,7 +115,7 @@ export const ServiceCard: React.FC<ServiceCardProps> = ({ config, result }) => {
   return (
     <div className={`rounded-3xl p-5 border transition-all duration-200 flex flex-col justify-between group ${
       isEnabled 
-        ? 'bg-slate-900/90 border-slate-800/80 shadow-[6px_6px_16px_rgba(0,0,0,0.4),-4px_-4px_12px_rgba(255,255,255,0.03)] hover:-translate-y-1' 
+        ? 'bg-slate-900/90 border-slate-800/80 shadow-[6px_6px_16px_rgba(0,0,0,0.4),-4px_-4px_12px_rgba(255,255,255,0.03)] hover:-translate-y-1 hover:border-slate-700/80' 
         : 'bg-slate-950/60 border-slate-800/40 opacity-75 shadow-none'
     }`}>
       
@@ -123,7 +123,7 @@ export const ServiceCard: React.FC<ServiceCardProps> = ({ config, result }) => {
       <div>
         <div className="flex items-start justify-between gap-3 mb-3">
           <div>
-            <div className="flex items-center space-x-2 mb-1">
+            <div className="flex items-center space-x-2 mb-1 select-none">
               <span className={`text-[10px] font-bold uppercase tracking-wider px-2 py-0.5 rounded-full border ${envBg}`}>
                 {config.environment}
               </span>
@@ -140,7 +140,7 @@ export const ServiceCard: React.FC<ServiceCardProps> = ({ config, result }) => {
           </div>
 
           {/* Status Pill Badge */}
-          <div className={`flex items-center space-x-1.5 px-3 py-1 rounded-full border text-xs font-bold shadow-sm ${statusBg}`}>
+          <div className={`flex items-center space-x-1.5 px-3 py-1 rounded-full border text-xs font-bold shadow-sm select-none ${statusBg}`}>
             <span className={`w-2 h-2 rounded-full ${statusDot} ${isEnabled ? 'animate-pulse' : ''}`} />
             <StatusIcon className="w-3.5 h-3.5" />
             <span>{statusText}</span>
@@ -149,7 +149,7 @@ export const ServiceCard: React.FC<ServiceCardProps> = ({ config, result }) => {
 
         {/* Latency History & Metric Bar */}
         {isEnabled ? (
-          <div className="my-4 p-3 rounded-2xl bg-slate-950/60 border border-slate-800/60 shadow-[inset_2px_2px_4px_rgba(0,0,0,0.4)]">
+          <div className="my-4 p-3 rounded-2xl bg-slate-950/60 border border-slate-800/60 shadow-[inset_2px_2px_4px_rgba(0,0,0,0.4)] select-none">
             <div className="flex items-center justify-between text-xs font-semibold text-slate-300 mb-2">
               <span className="flex items-center space-x-1">
                 <Server className="w-3.5 h-3.5 text-slate-400" />
@@ -169,7 +169,7 @@ export const ServiceCard: React.FC<ServiceCardProps> = ({ config, result }) => {
                   <div
                     key={idx}
                     style={{ height: `${heightPercent}%` }}
-                    className={`flex-1 rounded-t-sm ${barColor} opacity-80 hover:opacity-100 transition-opacity`}
+                    className={`flex-1 rounded-t-sm ${barColor} opacity-80 hover:opacity-100 transition-opacity cursor-pointer`}
                     title={`${val} ms`}
                   />
                 );
@@ -177,14 +177,14 @@ export const ServiceCard: React.FC<ServiceCardProps> = ({ config, result }) => {
             </div>
           </div>
         ) : (
-          <div className="my-4 p-3 rounded-2xl bg-slate-950/30 border border-slate-800/30 text-center">
+          <div className="my-4 p-3 rounded-2xl bg-slate-950/30 border border-slate-800/30 text-center select-none">
             <p className="text-xs text-slate-400">Polling is disabled for this service.</p>
           </div>
         )}
 
         {/* Dynamic Checks Grid */}
         {isEnabled && (
-          <div className="grid grid-cols-2 gap-2 mb-4">
+          <div className="grid grid-cols-2 gap-2 mb-4 select-none">
             {Object.entries(checks).map(([key, check]: [string, DynamicCheck]) => {
               const isOk = check.status === 'ok';
               const isWarning = check.status === 'warning';
@@ -234,7 +234,7 @@ export const ServiceCard: React.FC<ServiceCardProps> = ({ config, result }) => {
 
         {/* System Telemetry Bar (RAM, CPU, Disk) */}
         {isEnabled && metrics && (
-          <div className="mb-4 p-2.5 rounded-xl bg-slate-950/30 border border-slate-800/40 flex items-center justify-around text-[11px] text-slate-400 font-mono">
+          <div className="mb-4 p-2.5 rounded-xl bg-slate-950/30 border border-slate-800/40 flex items-center justify-around text-[11px] text-slate-400 font-mono select-none">
             {metrics.memory_usage_mb && (
               <span title="PHP Memory Usage">RAM: <strong className="text-slate-200">{metrics.memory_usage_mb} MB</strong></span>
             )}
@@ -251,7 +251,8 @@ export const ServiceCard: React.FC<ServiceCardProps> = ({ config, result }) => {
         {isEnabled && failedJobsCount > 0 && (
           <button
             onClick={() => openQueueInspector({ config, lastResult: result })}
-            className="w-full mb-4 p-2.5 rounded-2xl bg-rose-950/50 border border-rose-800/60 hover:bg-rose-900/60 transition-all flex items-center justify-between text-rose-300 group/btn"
+            className="w-full mb-4 p-2.5 rounded-2xl bg-rose-950/50 border border-rose-800/60 hover:bg-rose-900/60 active:scale-[0.98] transition-all flex items-center justify-between text-rose-300 group/btn cursor-pointer select-none"
+            aria-label="Inspect Failed Job Exception Traces"
           >
             <div className="flex items-center space-x-2 text-xs font-bold">
               <AlertOctagon className="w-4 h-4 text-rose-400 animate-bounce" />
@@ -265,7 +266,7 @@ export const ServiceCard: React.FC<ServiceCardProps> = ({ config, result }) => {
       </div>
 
       {/* Card Footer Controls */}
-      <div className="pt-3 border-t border-slate-800/60 flex items-center justify-between">
+      <div className="pt-3 border-t border-slate-800/60 flex items-center justify-between select-none">
         <span className="text-[11px] text-slate-400 font-mono">
           {isEnabled ? `Polled: ${result?.polled_at ? new Date(result.polled_at).toLocaleTimeString() : 'Pending'}` : 'Polling Disabled'}
         </span>
@@ -275,12 +276,13 @@ export const ServiceCard: React.FC<ServiceCardProps> = ({ config, result }) => {
           {user?.role !== 'viewer' && (
             <button
               onClick={() => toggleEnableService(config.id)}
-              className={`p-1.5 rounded-lg transition-all text-xs font-semibold flex items-center space-x-1 ${
+              className={`p-1.5 rounded-lg transition-all text-xs font-semibold flex items-center space-x-1 cursor-pointer active:scale-95 ${
                 isEnabled
                   ? 'bg-emerald-950/80 text-emerald-400 border border-emerald-800/60 hover:bg-emerald-900/60'
                   : 'bg-slate-800 text-slate-400 border border-slate-700 hover:text-slate-200'
               }`}
               title={isEnabled ? 'Disable Polling for this Service' : 'Enable Polling for this Service'}
+              aria-label={isEnabled ? 'Disable Polling' : 'Enable Polling'}
             >
               {isEnabled ? <Power className="w-3.5 h-3.5" /> : <PowerOff className="w-3.5 h-3.5 text-rose-400" />}
               <span className="hidden sm:inline">{isEnabled ? 'Enabled' : 'Disabled'}</span>
@@ -291,8 +293,9 @@ export const ServiceCard: React.FC<ServiceCardProps> = ({ config, result }) => {
           {isEnabled && (
             <button
               onClick={() => openQueueInspector({ config, lastResult: result })}
-              className="p-1.5 rounded-lg bg-slate-800 hover:bg-slate-700 text-slate-300 hover:text-white transition-all text-xs font-semibold flex items-center space-x-1"
+              className="p-1.5 rounded-lg bg-slate-800 hover:bg-slate-700 text-slate-300 hover:text-white active:scale-95 transition-all text-xs font-semibold flex items-center space-x-1 cursor-pointer"
               title="Inspect Queue & Horizon"
+              aria-label="Inspect Queue & Horizon"
             >
               <Layers className="w-3.5 h-3.5" />
               <span className="hidden sm:inline">Queues</span>
@@ -303,8 +306,9 @@ export const ServiceCard: React.FC<ServiceCardProps> = ({ config, result }) => {
           {isEnabled && (
             <button
               onClick={() => triggerPollSingle(config.id)}
-              className="p-1.5 rounded-lg bg-slate-800 hover:bg-slate-700 text-slate-300 hover:text-white transition-all"
+              className="p-1.5 rounded-lg bg-slate-800 hover:bg-slate-700 text-slate-300 hover:text-white active:scale-95 transition-all cursor-pointer"
               title="Poll Service Now"
+              aria-label="Poll Service Now"
             >
               <RefreshCw className="w-3.5 h-3.5" />
             </button>
@@ -314,12 +318,13 @@ export const ServiceCard: React.FC<ServiceCardProps> = ({ config, result }) => {
           {isEnabled && user?.role !== 'viewer' && (
             <button
               onClick={() => toggleMuteService(config.id)}
-              className={`p-1.5 rounded-lg transition-all ${
+              className={`p-1.5 rounded-lg transition-all cursor-pointer active:scale-95 ${
                 isMuted
                   ? 'bg-indigo-950 text-indigo-400 border border-indigo-800'
                   : 'bg-slate-800 hover:bg-slate-700 text-slate-300 hover:text-white'
               }`}
               title={isMuted ? 'Unmute Service' : 'Mute Service (Maintenance)'}
+              aria-label={isMuted ? 'Unmute Service' : 'Mute Service'}
             >
               {isMuted ? <VolumeX className="w-3.5 h-3.5" /> : <Volume2 className="w-3.5 h-3.5" />}
             </button>
@@ -330,19 +335,21 @@ export const ServiceCard: React.FC<ServiceCardProps> = ({ config, result }) => {
             <>
               <button
                 onClick={() => openAddModal(config)}
-                className="p-1.5 rounded-lg bg-slate-800 hover:bg-slate-700 text-slate-300 hover:text-white transition-all"
+                className="p-1.5 rounded-lg bg-slate-800 hover:bg-slate-700 text-slate-300 hover:text-white active:scale-95 transition-all cursor-pointer"
                 title="Edit Configuration"
+                aria-label="Edit Service Configuration"
               >
                 <Edit3 className="w-3.5 h-3.5" />
               </button>
               <button
                 onClick={() => {
-                  if (confirm(`Remove ${config.name} from KetariSentry monitoring?`)) {
+                  if (confirm(`Remove ${config.name} from Ketarisentry monitoring?`)) {
                     deleteService(config.id);
                   }
                 }}
-                className="p-1.5 rounded-lg bg-slate-800 hover:bg-rose-900/60 text-slate-400 hover:text-rose-300 transition-all"
+                className="p-1.5 rounded-lg bg-slate-800 hover:bg-rose-900/60 text-slate-400 hover:text-rose-300 active:scale-95 transition-all cursor-pointer"
                 title="Delete Service"
+                aria-label="Delete Service"
               >
                 <Trash2 className="w-3.5 h-3.5" />
               </button>

@@ -1,12 +1,12 @@
-# KetariSentry Design System Spec (DESIGN.md)
+# Ketarisentry Design System Spec (DESIGN.md)
 
-This document specifies the **Minimalist Modern Claymorphism** design system used throughout **KetariSentry**.
+This document specifies the **Minimalist Modern Claymorphism** design system used throughout **Ketarisentry**.
 
 ---
 
 ## 🎨 Visual Philosophy: Modern Claymorphism
 
-KetariSentry utilizes a modern, clean, tactile **Claymorphism** design aesthetic. Unlike heavy glassy blurs or flat 2D designs, Claymorphism provides soft, rounded, 3D-like tactile surfaces using dual drop-shadows (light top-left highlights + soft bottom-right shadow) combined with high-contrast typography.
+Ketarisentry utilizes a modern, clean, tactile **Claymorphism** design aesthetic. Unlike heavy glassy blurs or flat 2D designs, Claymorphism provides soft, rounded, 3D-like tactile surfaces using dual drop-shadows (light top-left highlights + soft bottom-right shadow) combined with high-contrast typography.
 
 ### Core Principles
 1. **Tactile & Soft**: Heavy border radii (`rounded-2xl`, `rounded-3xl`) and soft dual shadows give elements a touchable, physical clay feel.

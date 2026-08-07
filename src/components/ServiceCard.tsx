@@ -14,9 +14,12 @@ import {
   Trash2, 
   Database, 
   Server, 
-  HardDrive 
+  HardDrive,
+  Zap,
+  Cloud,
+  Terminal
 } from 'lucide-react';
-import type { ServiceConfig, PollResult, HealthStatus } from '../types';
+import type { ServiceConfig, PollResult, HealthStatus, DynamicCheck, CheckType } from '../types';
 import { useAuth } from '../context/AuthContext';
 import { useHealth } from '../context/HealthContext';
 
@@ -33,6 +36,8 @@ export const ServiceCard: React.FC<ServiceCardProps> = ({ config, result }) => {
   const latency = result?.latency_ms || 0;
   const queue = result?.queue;
   const ssl = result?.ssl;
+  const metrics = result?.system_metrics;
+  const checks = result?.checks || {};
   const failedJobsCount = queue?.failed_jobs_24h || 0;
   const pendingJobs = queue?.pending_jobs || 0;
 
@@ -66,6 +71,28 @@ export const ServiceCard: React.FC<ServiceCardProps> = ({ config, result }) => {
       : config.environment === 'staging'
       ? 'bg-amber-950/50 text-amber-300 border-amber-800/40'
       : 'bg-slate-800 text-slate-400 border-slate-700/50';
+
+  // Check Type Icon mapping
+  const getCheckIcon = (type: CheckType) => {
+    switch (type) {
+      case 'database':
+        return <Database className="w-3.5 h-3.5 text-indigo-400" />;
+      case 'redis':
+        return <HardDrive className="w-3.5 h-3.5 text-rose-400" />;
+      case 'cache':
+        return <Zap className="w-3.5 h-3.5 text-amber-400" />;
+      case 'queue':
+        return <Layers className="w-3.5 h-3.5 text-amber-400" />;
+      case 'storage':
+        return <HardDrive className="w-3.5 h-3.5 text-emerald-400" />;
+      case 'scheduler':
+        return <Clock className="w-3.5 h-3.5 text-indigo-400" />;
+      case 'external_api':
+        return <Cloud className="w-3.5 h-3.5 text-sky-400" />;
+      default:
+        return <Terminal className="w-3.5 h-3.5 text-slate-400" />;
+    }
+  };
 
   return (
     <div className="bg-slate-900/90 rounded-3xl p-5 border border-slate-800/80 shadow-[6px_6px_16px_rgba(0,0,0,0.4),-4px_-4px_12px_rgba(255,255,255,0.03)] hover:-translate-y-1 transition-all duration-200 flex flex-col justify-between group">
@@ -127,34 +154,35 @@ export const ServiceCard: React.FC<ServiceCardProps> = ({ config, result }) => {
           </div>
         </div>
 
-        {/* Core Sub-Checks Grid (DB, Redis, Queue, SSL) */}
+        {/* Dynamic Checks Grid */}
         <div className="grid grid-cols-2 gap-2 mb-4">
-          {/* Database Check */}
-          <div className="p-2.5 rounded-xl bg-slate-950/40 border border-slate-800/50 flex items-center justify-between">
-            <div className="flex items-center space-x-2">
-              <Database className="w-4 h-4 text-indigo-400" />
-              <span className="text-xs font-semibold text-slate-300">Database</span>
-            </div>
-            <span className="text-xs font-bold text-emerald-400">
-              {result?.checks?.database?.status === 'ok' ? 'OK' : 'ERR'}
-            </span>
-          </div>
+          {Object.entries(checks).map(([key, check]: [string, DynamicCheck]) => {
+            const isOk = check.status === 'ok';
+            const isWarning = check.status === 'warning';
+            const isCritical = check.status === 'critical';
 
-          {/* Redis Check */}
-          <div className="p-2.5 rounded-xl bg-slate-950/40 border border-slate-800/50 flex items-center justify-between">
-            <div className="flex items-center space-x-2">
-              <HardDrive className="w-4 h-4 text-rose-400" />
-              <span className="text-xs font-semibold text-slate-300">Redis</span>
-            </div>
-            <span className="text-xs font-bold text-emerald-400">
-              {result?.checks?.redis?.status === 'ok' ? 'OK' : 'ERR'}
-            </span>
-          </div>
+            const statusText = isOk ? 'OK' : isWarning ? 'WARN' : isCritical ? 'FAIL' : 'UNKNOWN';
+            const textColor = isOk ? 'text-emerald-400' : isWarning ? 'text-amber-400' : 'text-rose-400';
 
-          {/* Pending Queue Jobs */}
+            return (
+              <div key={key} className="p-2.5 rounded-xl bg-slate-950/40 border border-slate-800/50 flex items-center justify-between">
+                <div className="flex items-center space-x-2 truncate">
+                  {getCheckIcon(check.type)}
+                  <span className="text-xs font-semibold text-slate-300 truncate" title={check.name}>
+                    {check.name}
+                  </span>
+                </div>
+                <span className={`text-xs font-bold font-mono ${textColor}`}>
+                  {statusText}
+                </span>
+              </div>
+            );
+          })}
+
+          {/* Queue Pending Counter */}
           <div className="p-2.5 rounded-xl bg-slate-950/40 border border-slate-800/50 flex items-center justify-between">
             <div className="flex items-center space-x-2">
-              <Layers className="w-4 h-4 text-amber-400" />
+              <Layers className="w-3.5 h-3.5 text-amber-400" />
               <span className="text-xs font-semibold text-slate-300">Pending Jobs</span>
             </div>
             <span className="text-xs font-mono font-bold text-slate-200">
@@ -165,7 +193,7 @@ export const ServiceCard: React.FC<ServiceCardProps> = ({ config, result }) => {
           {/* SSL Cert Check */}
           <div className="p-2.5 rounded-xl bg-slate-950/40 border border-slate-800/50 flex items-center justify-between">
             <div className="flex items-center space-x-2">
-              <Lock className="w-4 h-4 text-emerald-400" />
+              <Lock className="w-3.5 h-3.5 text-emerald-400" />
               <span className="text-xs font-semibold text-slate-300">SSL Cert</span>
             </div>
             <span className={`text-xs font-bold ${ssl?.days_remaining && ssl.days_remaining < 14 ? 'text-amber-400 font-bold' : 'text-emerald-400'}`}>
@@ -173,6 +201,21 @@ export const ServiceCard: React.FC<ServiceCardProps> = ({ config, result }) => {
             </span>
           </div>
         </div>
+
+        {/* System Telemetry Bar (RAM, CPU, Disk) */}
+        {metrics && (
+          <div className="mb-4 p-2.5 rounded-xl bg-slate-950/30 border border-slate-800/40 flex items-center justify-around text-[11px] text-slate-400 font-mono">
+            {metrics.memory_usage_mb && (
+              <span title="PHP Memory Usage">RAM: <strong className="text-slate-200">{metrics.memory_usage_mb} MB</strong></span>
+            )}
+            {metrics.cpu_load_percent && (
+              <span title="Server CPU Load">CPU: <strong className="text-slate-200">{metrics.cpu_load_percent}%</strong></span>
+            )}
+            {metrics.disk_free_gb && (
+              <span title="Free Disk Space">Free Storage: <strong className="text-emerald-400">{metrics.disk_free_gb} GB</strong></span>
+            )}
+          </div>
+        )}
 
         {/* Failed Jobs Alert Counter & Inspector Button */}
         {failedJobsCount > 0 && (

@@ -1,4 +1,4 @@
-import type { ServiceConfig, PollResult, HealthStatus, FailedJobTrace } from '../types';
+import type { ServiceConfig, PollResult, HealthStatus, FailedJobTrace, DynamicCheck } from '../types';
 
 export const INITIAL_SERVICES: ServiceConfig[] = [
   {
@@ -93,10 +93,7 @@ export async function executePullPoll(config: ServiceConfig): Promise<PollResult
       service_id: config.id,
       status: 'maintenance',
       latency_ms: 0,
-      checks: {
-        database: { status: 'ok', latency_ms: 0 },
-        redis: { status: 'ok', latency_ms: 0 },
-      },
+      checks: {},
       queue: {
         horizon_active: false,
         pending_jobs: 0,
@@ -138,12 +135,10 @@ export async function executePullPoll(config: ServiceConfig): Promise<PollResult
       const data = await response.json();
       return {
         service_id: config.id,
-        status: data.status || 'operational',
+        status: data.status || deriveOverallStatus(data.checks),
         latency_ms: data.latency_ms || latency,
-        checks: data.checks || {
-          database: { status: 'ok', latency_ms: 4 },
-          redis: { status: 'ok', latency_ms: 2 },
-        },
+        checks: data.checks || getFallbackChecks(),
+        system_metrics: data.system_metrics,
         queue: data.queue || {
           horizon_active: true,
           pending_jobs: 12,
@@ -160,8 +155,13 @@ export async function executePullPoll(config: ServiceConfig): Promise<PollResult
         status: 'degraded',
         latency_ms: latency,
         checks: {
-          database: { status: 'warning', latency_ms: latency },
-          redis: { status: 'ok', latency_ms: 2 },
+          http_probe: {
+            name: 'HTTP Health Endpoint',
+            type: 'system',
+            status: 'warning',
+            latency_ms: latency,
+            message: `HTTP ${response.status}: ${response.statusText}`,
+          },
         },
         queue: {
           horizon_active: true,
@@ -181,32 +181,82 @@ export async function executePullPoll(config: ServiceConfig): Promise<PollResult
   }
 }
 
+function deriveOverallStatus(checks?: Record<string, DynamicCheck>): HealthStatus {
+  if (!checks) return 'operational';
+  const values = Object.values(checks);
+  if (values.some((c) => c.status === 'critical')) return 'outage';
+  if (values.some((c) => c.status === 'warning')) return 'degraded';
+  return 'operational';
+}
+
+function getFallbackChecks(): Record<string, DynamicCheck> {
+  return {
+    database: { name: 'Database', type: 'database', status: 'ok', latency_ms: 4 },
+    redis: { name: 'Redis Cache', type: 'redis', status: 'ok', latency_ms: 2 },
+  };
+}
+
 function generateMockPollResult(config: ServiceConfig): PollResult {
   const isSrv2 = config.id === 'srv-2';
   const isSrv3 = config.id === 'srv-3';
-  const isSrv4 = config.id === 'srv-4';
 
   let status: HealthStatus = 'operational';
   let latency = Math.floor(Math.random() * 35) + 15;
-  let dbStatus: 'ok' | 'failed' | 'warning' = 'ok';
-  let redisStatus: 'ok' | 'failed' | 'warning' = 'ok';
   let pendingJobs = Math.floor(Math.random() * 20) + 2;
   let failedJobs24h = 0;
   let sslDays = 65;
+
+  const checks: Record<string, DynamicCheck> = {
+    database: {
+      name: 'MySQL Primary',
+      type: 'database',
+      status: 'ok',
+      latency_ms: Math.round(latency * 0.2),
+    },
+    redis: {
+      name: 'Redis Cache',
+      type: 'redis',
+      status: 'ok',
+      latency_ms: Math.round(latency * 0.1),
+    },
+    storage: {
+      name: 'Local Storage',
+      type: 'storage',
+      status: 'ok',
+      details: { free_gb: 184 },
+    },
+  };
 
   if (isSrv2) {
     status = 'degraded';
     latency = Math.floor(Math.random() * 80) + 180;
     failedJobs24h = 1;
     pendingJobs = 34;
-    sslDays = 12; // Trigger SSL warning!
+    sslDays = 12; // Trigger SSL warning
+
+    checks['stripe_api'] = {
+      name: 'Stripe Gateway',
+      type: 'external_api',
+      status: 'warning',
+      latency_ms: 450,
+      message: 'Elevated API response time > 400ms',
+    };
   } else if (isSrv3) {
     failedJobs24h = 2;
     pendingJobs = 8;
-  } else if (isSrv4) {
-    status = 'operational';
-    sslDays = 120;
-    pendingJobs = 0;
+
+    checks['scheduler'] = {
+      name: 'Laravel Cron Scheduler',
+      type: 'scheduler',
+      status: 'ok',
+      message: 'Heartbeat active (30s ago)',
+    };
+    checks['meilisearch'] = {
+      name: 'Meilisearch Engine',
+      type: 'custom',
+      status: 'ok',
+      latency_ms: 12,
+    };
   }
 
   const failedTraces = MOCK_FAILED_JOBS[config.id] || [];
@@ -215,10 +265,11 @@ function generateMockPollResult(config: ServiceConfig): PollResult {
     service_id: config.id,
     status,
     latency_ms: latency,
-    checks: {
-      database: { status: dbStatus, latency_ms: Math.round(latency * 0.2) },
-      redis: { status: redisStatus, latency_ms: Math.round(latency * 0.1) },
-      storage: { status: 'ok', latency_ms: 1, free_gb: 184 },
+    checks,
+    system_metrics: {
+      memory_usage_mb: Math.floor(Math.random() * 40) + 120,
+      cpu_load_percent: Math.floor(Math.random() * 25) + 10,
+      disk_free_gb: 148,
     },
     queue: {
       horizon_active: true,

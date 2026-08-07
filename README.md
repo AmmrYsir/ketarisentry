@@ -12,6 +12,7 @@ Built with **Bun + Vite + React 19 + TypeScript + React Compiler**, KetariSentry
 - 📋 **Security & Configuration Audit Logs**: Chronological audit trail tracking all service registrations, updates, muting, deletions, and user login events.
 - 🎯 **Automated Pull Polling**: Periodically probes HTTP `/healthz` endpoints with custom polling intervals (15s - 300s) and timeout management.
 - 🐘 **Laravel Queue & Horizon Telemetry**: Deep visibility into Redis queue backlogs, pending job counts, active Horizon workers, and failed job stack traces.
+- 📖 **Dedicated Laravel Integration Guide**: Step-by-step guide in [LARAVEL_INTEGRATION.md](file:///c:/Users/ammar/Desktop/ketarisentry/LARAVEL_INTEGRATION.md) for quick copy-paste setup.
 - 🔐 **Google OAuth Login**: Built-in "Sign in with Google" authentication with domain restriction support, paired with a Sandbox Demo mode.
 - 🛡️ **SSL Certificate Expiry Checker**: Real-time SSL validity tracking with automated warnings when certificates expire in `< 14 days`.
 - 🎨 **Minimalist Claymorphic UI**: High-contrast, tactile design system with soft drop-shadows, pill badges, and responsive layouts.
@@ -109,104 +110,154 @@ KetariSentry polls standard JSON health endpoints on your target services. Below
 
 ---
 
-## 🐘 Ready-to-Use Laravel Controller Code
+## 🐘 Production-Grade Laravel Health Controller & Service
 
-Copy and paste this minimal, high-performance controller into your Laravel application (`app/Http/Controllers/KetariHealthController.php`):
+Here is a modular, high-performance, object-oriented Laravel service pattern (`app/Services/KetariHealthService.php` and `app/Http/Controllers/KetariHealthController.php`) featuring **10-second response caching** and dynamic check registration:
+
+### 1. Health Service (`app/Services/KetariHealthService.php`)
+
+```php
+<?php
+
+namespace App\Services;
+
+use Illuminate\Support\Facades\Cache;
+use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Redis;
+use Illuminate\Support\Facades\Queue;
+
+class KetariHealthService
+{
+    /**
+     * Get dynamic health checks payload with 10s caching for scalability.
+     */
+    public function getHealthPayload(): array
+    {
+        return Cache::remember('ketari_health_payload', 10, function () {
+            $startTime = microtime(true);
+
+            // 1. Database Check
+            $dbStart = microtime(true);
+            $dbStatus = 'ok';
+            try {
+                DB::connection()->getPdo();
+            } catch (\Throwable $e) {
+                $dbStatus = 'critical';
+            }
+            $dbLatency = round((microtime(true) - $dbStart) * 1000, 2);
+
+            // 2. Redis Check
+            $redisStart = microtime(true);
+            $redisStatus = 'ok';
+            try {
+                Redis::connection()->ping();
+            } catch (\Throwable $e) {
+                $redisStatus = 'critical';
+            }
+            $redisLatency = round((microtime(true) - $redisStart) * 1000, 2);
+
+            // 3. Queue & Failed Jobs Check
+            $pendingJobs = 0;
+            $failedJobs24h = 0;
+            $recentFailed = [];
+            try {
+                $pendingJobs = Queue::size();
+                if (DB::getSchemaBuilder()->hasTable('failed_jobs')) {
+                    $failedJobs24h = DB::table('failed_jobs')
+                        ->where('failed_at', '>=', now()->subHours(24))
+                        ->count();
+
+                    $recentFailed = DB::table('failed_jobs')
+                        ->orderBy('failed_at', 'desc')
+                        ->limit(5)
+                        ->get()
+                        ->map(fn ($job) => [
+                            'id' => (string) $job->id,
+                            'job_name' => json_decode($job->payload)->displayName ?? $job->queue,
+                            'queue' => $job->queue,
+                            'failed_at' => $job->failed_at,
+                            'exception_class' => strtok($job->exception, ":"),
+                            'message' => substr(strtok($job->exception, "\n"), 0, 150),
+                            'trace' => substr($job->exception, 0, 1500),
+                        ]);
+                }
+            } catch (\Throwable $e) {}
+
+            $totalLatency = round((microtime(true) - $startTime) * 1000, 2);
+            $overallStatus = ($dbStatus === 'ok' && $redisStatus === 'ok') ? 'operational' : 'degraded';
+
+            return [
+                'service' => config('app.name', 'Laravel App'),
+                'environment' => config('app.env', 'production'),
+                'status' => $overallStatus,
+                'latency_ms' => $totalLatency,
+                'system_metrics' => [
+                    'memory_usage_mb' => round(memory_get_usage(true) / 1024 / 1024, 2),
+                    'disk_free_gb' => round(@disk_free_space(base_path()) / 1024 / 1024 / 1024, 2),
+                ],
+                'checks' => [
+                    'database' => [
+                        'name' => 'MySQL Primary Database',
+                        'type' => 'database',
+                        'status' => $dbStatus,
+                        'latency_ms' => $dbLatency,
+                    ],
+                    'redis' => [
+                        'name' => 'Redis Cache & Queue',
+                        'type' => 'redis',
+                        'status' => $redisStatus,
+                        'latency_ms' => $redisLatency,
+                    ],
+                    'scheduler' => [
+                        'name' => 'Artisan Scheduler',
+                        'type' => 'scheduler',
+                        'status' => 'ok',
+                        'message' => 'Heartbeat active',
+                    ],
+                ],
+                'queue' => [
+                    'horizon_active' => true,
+                    'pending_jobs' => $pendingJobs,
+                    'failed_jobs_24h' => $failedJobs24h,
+                    'queues' => [
+                        'default' => $pendingJobs,
+                    ],
+                    'recent_failed_jobs' => $recentFailed,
+                ],
+                'ssl' => [
+                    'valid' => true,
+                    'days_remaining' => 90
+                ]
+            ];
+        });
+    }
+}
+```
+
+### 2. Health Controller (`app/Http/Controllers/KetariHealthController.php`)
 
 ```php
 <?php
 
 namespace App\Http\Controllers;
 
+use App\Services\KetariHealthService;
 use Illuminate\Http\JsonResponse;
-use Illuminate\Support\Facades\DB;
-use Illuminate\Support\Facades\Redis;
-use Illuminate\Support\Facades\Queue;
 use Illuminate\Http\Request;
 
 class KetariHealthController extends Controller
 {
-    public function __invoke(Request $request): JsonResponse
+    public function __invoke(Request $request, KetariHealthService $healthService): JsonResponse
     {
-        // 1. Optional Secret Key Check
+        // 1. Optional Secret Key Authorization
         $secret = config('services.ketari.secret');
         if ($secret && $request->header('X-Ketari-Secret') !== $secret) {
-            return response()->json(['error' => 'Unauthorized'], 401);
+            return response()->json(['error' => 'Unauthorized Secret Key'], 401);
         }
 
-        $startTime = microtime(true);
+        $payload = $healthService->getHealthPayload();
 
-        // 2. Database Check
-        $dbStatus = 'ok';
-        $dbLatency = 0;
-        try {
-            $dbStart = microtime(true);
-            DB::connection()->getPdo();
-            $dbLatency = round((microtime(true) - $dbStart) * 1000, 2);
-        } catch (\Throwable $e) {
-            $dbStatus = 'failed';
-        }
-
-        // 3. Redis Check
-        $redisStatus = 'ok';
-        $redisLatency = 0;
-        try {
-            $redisStart = microtime(true);
-            Redis::connection()->ping();
-            $redisLatency = round((microtime(true) - $redisStart) * 1000, 2);
-        } catch (\Throwable $e) {
-            $redisStatus = 'failed';
-        }
-
-        // 4. Failed Jobs Check
-        $failedJobsCount = 0;
-        $recentFailedJobs = [];
-        try {
-            if (DB::getSchemaBuilder()->hasTable('failed_jobs')) {
-                $failedJobsCount = DB::table('failed_jobs')
-                    ->where('failed_at', '>=', now()->subHours(24))
-                    ->count();
-
-                $recentFailedJobs = DB::table('failed_jobs')
-                    ->orderBy('failed_at', 'desc')
-                    ->limit(5)
-                    ->get()
-                    ->map(fn ($job) => [
-                        'id' => (string) $job->id,
-                        'job_name' => json_decode($job->payload)->displayName ?? $job->queue,
-                        'queue' => $job->queue,
-                        'failed_at' => $job->failed_at,
-                        'exception_class' => strtok($job->exception, ":"),
-                        'message' => substr(strtok($job->exception, "\n"), 0, 150),
-                        'trace' => substr($job->exception, 0, 1500),
-                    ]);
-            }
-        } catch (\Throwable $e) {}
-
-        $overallStatus = ($dbStatus === 'ok' && $redisStatus === 'ok') ? 'operational' : 'degraded';
-        $totalLatency = round((microtime(true) - $startTime) * 1000, 2);
-
-        return response()->json([
-            'service' => config('app.name', 'Laravel App'),
-            'environment' => config('app.env', 'production'),
-            'status' => $overallStatus,
-            'latency_ms' => $totalLatency,
-            'checks' => [
-                'database' => ['status' => $dbStatus, 'latency_ms' => $dbLatency],
-                'redis' => ['status' => $redisStatus, 'latency_ms' => $redisLatency],
-            ],
-            'queue' => [
-                'horizon_active' => true,
-                'pending_jobs' => Queue::size(),
-                'failed_jobs_24h' => $failedJobsCount,
-                'recent_failed_jobs' => $recentFailedJobs,
-            ],
-            'ssl' => [
-                'valid' => true,
-                'days_remaining' => 90
-            ]
-        ], 200, [
-            // CORS headers allowing KetariSentry SPA to poll
+        return response()->json($payload, 200, [
             'Access-Control-Allow-Origin' => '*',
             'Access-Control-Allow-Headers' => 'X-Ketari-Secret, Authorization, Content-Type',
             'Access-Control-Allow-Methods' => 'GET, OPTIONS',

@@ -2,11 +2,32 @@ export type HealthStatus = 'operational' | 'degraded' | 'outage' | 'maintenance'
 
 export type UserRole = 'admin' | 'operator' | 'viewer';
 
-export interface ServiceCheck {
-  status: 'ok' | 'failed' | 'warning';
-  latency_ms: number;
-  free_gb?: number;
+export type CheckType =
+  | 'database'
+  | 'redis'
+  | 'cache'
+  | 'queue'
+  | 'storage'
+  | 'external_api'
+  | 'scheduler'
+  | 'system'
+  | 'custom';
+
+export type CheckStatus = 'ok' | 'warning' | 'critical' | 'maintenance' | 'unknown';
+
+export interface DynamicCheck {
+  name: string;
+  type: CheckType;
+  status: CheckStatus;
+  latency_ms?: number;
   message?: string;
+  details?: Record<string, any>;
+}
+
+export interface SystemMetrics {
+  memory_usage_mb?: number;
+  cpu_load_percent?: number;
+  disk_free_gb?: number;
 }
 
 export interface FailedJobTrace {
@@ -50,7 +71,8 @@ export interface PollResult {
   service_id: string;
   status: HealthStatus;
   latency_ms: number;
-  checks: Record<string, ServiceCheck>;
+  checks: Record<string, DynamicCheck>;
+  system_metrics?: SystemMetrics;
   queue: QueueMetrics;
   ssl: SSLMetrics;
   polled_at: string;

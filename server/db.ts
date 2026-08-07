@@ -99,13 +99,13 @@ export async function initializeSchema(): Promise<void> {
       INSERT OR IGNORE INTO users (id, name, email, password_hash, avatar, role, email_verified, is_sandbox, last_login_at)
       VALUES ($id, $name, $email, $password_hash, $avatar, $role, $email_verified, $is_sandbox, $last_login_at)
     `).run({
-      $id: 'usr_superadmin_1',
-      $name: 'System Superadmin',
+      $id: 'superadmin',
+      $name: 'System',
       $email: 'superadmin@ketarisentry.io',
       $password_hash: defaultPasswordHash,
       $avatar: 'https://api.dicebear.com/7.x/bottts/svg?seed=Superadmin',
       $role: 'superadmin',
-      $email_verified: 1,
+      $email_verified: 0,
       $is_sandbox: 0,
       $last_login_at: new Date().toISOString(),
     });

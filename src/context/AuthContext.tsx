@@ -57,7 +57,7 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
       email: 'superadmin@ketarisentry.io',
       avatar: 'https://api.dicebear.com/7.x/bottts/svg?seed=Superadmin',
       role,
-      email_verified: false,
+      email_verified: true,
       is_sandbox: true,
     };
     saveUserToState(demoUser);

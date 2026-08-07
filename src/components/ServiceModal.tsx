@@ -52,6 +52,7 @@ export const ServiceModal: React.FC = () => {
       secret_key: secretKey || undefined,
       auth_header: authHeader || undefined,
       muted: editingService?.muted || false,
+      enabled: editingService?.enabled ?? true,
     });
   };
 

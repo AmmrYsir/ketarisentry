@@ -29,6 +29,7 @@ export function initializeSchema(): void {
       secret_key TEXT,
       auth_header TEXT,
       muted INTEGER DEFAULT 0,
+      enabled INTEGER DEFAULT 1,
       created_at TEXT NOT NULL
     );
 
@@ -155,12 +156,15 @@ export function getAllServices(): ServiceConfig[] {
     secret_key: r.secret_key || undefined,
     auth_header: r.auth_header || undefined,
     muted: Boolean(r.muted),
+    enabled: r.enabled !== undefined ? Boolean(r.enabled) : true,
     created_at: r.created_at,
   }));
 }
 
 export function saveServiceToDb(service: ServiceConfig): void {
   const existing = db.query('SELECT id FROM services WHERE id = ?').get(service.id);
+  const isEnabled = service.enabled !== undefined ? (service.enabled ? 1 : 0) : 1;
+
   if (existing) {
     db.prepare(`
       UPDATE services SET
@@ -171,7 +175,8 @@ export function saveServiceToDb(service: ServiceConfig): void {
         timeout_sec = $timeout_sec,
         secret_key = $secret_key,
         auth_header = $auth_header,
-        muted = $muted
+        muted = $muted,
+        enabled = $enabled
       WHERE id = $id
     `).run({
       $id: service.id,
@@ -183,11 +188,12 @@ export function saveServiceToDb(service: ServiceConfig): void {
       $secret_key: service.secret_key || null,
       $auth_header: service.auth_header || null,
       $muted: service.muted ? 1 : 0,
+      $enabled: isEnabled,
     });
   } else {
     db.prepare(`
-      INSERT INTO services (id, name, url, environment, poll_interval_sec, timeout_sec, secret_key, auth_header, muted, created_at)
-      VALUES ($id, $name, $url, $environment, $poll_interval_sec, $timeout_sec, $secret_key, $auth_header, $muted, $created_at)
+      INSERT INTO services (id, name, url, environment, poll_interval_sec, timeout_sec, secret_key, auth_header, muted, enabled, created_at)
+      VALUES ($id, $name, $url, $environment, $poll_interval_sec, $timeout_sec, $secret_key, $auth_header, $muted, $enabled, $created_at)
     `).run({
       $id: service.id,
       $name: service.name,
@@ -198,6 +204,7 @@ export function saveServiceToDb(service: ServiceConfig): void {
       $secret_key: service.secret_key || null,
       $auth_header: service.auth_header || null,
       $muted: service.muted ? 1 : 0,
+      $enabled: isEnabled,
       $created_at: service.created_at || new Date().toISOString(),
     });
   }

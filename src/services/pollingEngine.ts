@@ -10,6 +10,7 @@ export const INITIAL_SERVICES: ServiceConfig[] = [
     timeout_sec: 5,
     secret_key: 'sk_live_998124719',
     muted: false,
+    enabled: true,
     created_at: new Date().toISOString(),
   },
   {
@@ -20,6 +21,7 @@ export const INITIAL_SERVICES: ServiceConfig[] = [
     poll_interval_sec: 30,
     timeout_sec: 5,
     muted: false,
+    enabled: true,
     created_at: new Date().toISOString(),
   },
   {
@@ -30,6 +32,7 @@ export const INITIAL_SERVICES: ServiceConfig[] = [
     poll_interval_sec: 30,
     timeout_sec: 5,
     muted: false,
+    enabled: true,
     created_at: new Date().toISOString(),
   },
   {
@@ -40,6 +43,7 @@ export const INITIAL_SERVICES: ServiceConfig[] = [
     poll_interval_sec: 60,
     timeout_sec: 10,
     muted: false,
+    enabled: true,
     created_at: new Date().toISOString(),
   },
 ];
@@ -86,8 +90,6 @@ const MOCK_FAILED_JOBS: Record<string, FailedJobTrace[]> = {
 };
 
 export async function executePullPoll(config: ServiceConfig): Promise<PollResult> {
-  const startTime = performance.now();
-
   if (config.muted) {
     return {
       service_id: config.id,
@@ -106,9 +108,19 @@ export async function executePullPoll(config: ServiceConfig): Promise<PollResult
     };
   }
 
-  // If this is a mock service URL (example.com), generate realistic mock telemetry
-  const isMockDomain = config.url.includes('example.com');
+  // Detect demo / placeholder mock domains
+  const isMockDomain =
+    config.url.includes('example.com') ||
+    config.url.includes('demo') ||
+    config.id.startsWith('srv-');
 
+  // For initial demo services, instantly return realistic interactive telemetry
+  if (isMockDomain) {
+    return generateMockPollResult(config);
+  }
+
+  // Real HTTP Pull Probe execution for custom added services
+  const startTime = performance.now();
   const controller = new AbortController();
   const timeoutId = setTimeout(() => controller.abort(), config.timeout_sec * 1000);
 
@@ -177,10 +189,6 @@ export async function executePullPoll(config: ServiceConfig): Promise<PollResult
       };
     }
   } catch (err: any) {
-    if (isMockDomain) {
-      return generateMockPollResult(config);
-    }
-
     const endTime = performance.now();
     const latency = Math.round(endTime - startTime);
     const errorMessage = err?.name === 'AbortError' 

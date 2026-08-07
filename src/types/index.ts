@@ -64,6 +64,7 @@ export interface ServiceConfig {
   auth_header?: string;
   secret_key?: string;
   muted: boolean;
+  enabled: boolean;
   created_at: string;
 }
 

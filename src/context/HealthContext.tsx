@@ -1,4 +1,4 @@
-import React, { createContext, useContext, useState, useEffect, useCallback } from 'react';
+import React, { createContext, useContext, useState, useEffect, useCallback, useRef } from 'react';
 import type { ReactNode } from 'react';
 import type { ServiceConfig, PollResult, Incident, ServiceWithStatus } from '../types';
 import { INITIAL_SERVICES, executePullPoll } from '../services/pollingEngine';
@@ -16,6 +16,7 @@ interface HealthContextType {
   triggerPollAll: () => Promise<void>;
   triggerPollSingle: (serviceId: string) => Promise<void>;
   toggleMuteService: (serviceId: string) => void;
+  toggleEnableService: (serviceId: string) => void;
   openAddModal: (service?: ServiceConfig) => void;
   closeAddModal: () => void;
   saveService: (config: Omit<ServiceConfig, 'id' | 'created_at'> & { id?: string }) => void;
@@ -50,6 +51,9 @@ export const HealthProvider: React.FC<{ children: ReactNode }> = ({ children }) 
   const [isAddModalOpen, setIsAddModalOpen] = useState<boolean>(false);
   const [editingService, setEditingService] = useState<ServiceConfig | null>(null);
 
+  // Track last polled timestamp per service to enforce strict poll_interval_sec intervals
+  const lastPolledMap = useRef<Record<string, number>>({});
+
   // Sync services from SQLite backend API on mount
   useEffect(() => {
     fetchServicesFromApi().then((apiServices) => {
@@ -67,7 +71,9 @@ export const HealthProvider: React.FC<{ children: ReactNode }> = ({ children }) 
 
   const triggerPollSingle = useCallback(async (serviceId: string) => {
     const targetConfig = services.find((s) => s.id === serviceId);
-    if (!targetConfig) return;
+    if (!targetConfig || targetConfig.enabled === false) return;
+
+    lastPolledMap.current[serviceId] = Date.now();
 
     let res = await pollServiceViaApi(targetConfig);
     if (!res) {
@@ -93,24 +99,38 @@ export const HealthProvider: React.FC<{ children: ReactNode }> = ({ children }) 
 
   const triggerPollAll = useCallback(async () => {
     for (const service of services) {
-      await triggerPollSingle(service.id);
+      if (service.enabled !== false && !service.muted) {
+        await triggerPollSingle(service.id);
+      }
     }
   }, [services, triggerPollSingle]);
 
-  // Initial poll on mount & polling interval loop
+  // Initial poll on mount
   useEffect(() => {
     triggerPollAll();
   }, [triggerPollAll]);
 
+  // Strict interval ticker loop checking each service against its poll_interval_sec
   useEffect(() => {
     if (!isPollingActive) return;
 
-    const timer = setInterval(() => {
-      triggerPollAll();
-    }, 15000); // Fleet pulse every 15s
+    const ticker = setInterval(() => {
+      const now = Date.now();
+      services.forEach((service) => {
+        // Skip disabled or muted services
+        if (service.enabled === false || service.muted) return;
 
-    return () => clearInterval(timer);
-  }, [isPollingActive, triggerPollAll]);
+        const intervalMs = (service.poll_interval_sec || 15) * 1000;
+        const lastPolled = lastPolledMap.current[service.id] || 0;
+
+        if (now - lastPolled >= intervalMs) {
+          triggerPollSingle(service.id);
+        }
+      });
+    }, 2000); // Check every 2s if any service is due for polling
+
+    return () => clearInterval(ticker);
+  }, [isPollingActive, services, triggerPollSingle]);
 
   const toggleMuteService = (serviceId: string) => {
     const updated = services.map((s) => {
@@ -126,12 +146,32 @@ export const HealthProvider: React.FC<{ children: ReactNode }> = ({ children }) 
     triggerPollSingle(serviceId);
   };
 
+  const toggleEnableService = (serviceId: string) => {
+    const updated = services.map((s) => {
+      if (s.id === serviceId) {
+        const newEnabled = s.enabled === false ? true : false;
+        const updatedConfig = { ...s, enabled: newEnabled };
+        saveServiceToApi(updatedConfig);
+        return updatedConfig;
+      }
+      return s;
+    });
+    saveServicesToStorage(updated);
+
+    // If re-enabled, poll immediately
+    const target = updated.find((s) => s.id === serviceId);
+    if (target && target.enabled) {
+      triggerPollSingle(serviceId);
+    }
+  };
+
   const saveService = (data: Omit<ServiceConfig, 'id' | 'created_at'> & { id?: string }) => {
     let serviceToSave: ServiceConfig;
     if (data.id) {
       serviceToSave = {
         ...data,
         id: data.id,
+        enabled: data.enabled !== undefined ? data.enabled : true,
         created_at: services.find((s) => s.id === data.id)?.created_at || new Date().toISOString(),
       } as ServiceConfig;
       const updated = services.map((s) => (s.id === data.id ? serviceToSave : s));
@@ -140,6 +180,7 @@ export const HealthProvider: React.FC<{ children: ReactNode }> = ({ children }) 
       serviceToSave = {
         ...data,
         id: `srv-${Date.now()}`,
+        enabled: true,
         created_at: new Date().toISOString(),
       };
       saveServicesToStorage([...services, serviceToSave]);
@@ -150,13 +191,14 @@ export const HealthProvider: React.FC<{ children: ReactNode }> = ({ children }) 
 
     setIsAddModalOpen(false);
     setEditingService(null);
-    triggerPollAll();
+    triggerPollSingle(serviceToSave.id);
   };
 
   const deleteService = (serviceId: string) => {
     const updated = services.filter((s) => s.id !== serviceId);
     saveServicesToStorage(updated);
     deleteServiceFromApi(serviceId);
+    delete lastPolledMap.current[serviceId];
 
     setResults((prev) => {
       const copy = { ...prev };
@@ -222,6 +264,7 @@ export const HealthProvider: React.FC<{ children: ReactNode }> = ({ children }) 
         triggerPollAll,
         triggerPollSingle,
         toggleMuteService,
+        toggleEnableService,
         openAddModal,
         closeAddModal,
         saveService,

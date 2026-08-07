@@ -189,7 +189,7 @@ export const LoginPage: React.FC = () => {
           <form onSubmit={handleMagicLinkSubmit} className="space-y-4">
             <div>
               <label htmlFor="magic-email" className="block text-xs font-semibold text-slate-300 mb-1.5 cursor-pointer">
-                Registered Email Address
+                Email Address
               </label>
               <div className="relative">
                 <Mail className="w-4 h-4 text-slate-400 absolute left-3.5 top-1/2 -translate-y-1/2 pointer-events-none" />

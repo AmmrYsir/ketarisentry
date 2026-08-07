@@ -88,72 +88,18 @@ export function initializeSchema(): void {
       timestamp TEXT NOT NULL
     );
   `);
-}
-
-// Run schema setup automatically
-initializeSchema();
-
-// Populate initial services if table is empty
-const serviceCountQuery = db.query('SELECT COUNT(*) as count FROM services');
-const countResult = serviceCountQuery.get() as { count: number };
-
-if (countResult.count === 0) {
-  seedDefaultData();
-}
-
-export function seedDefaultData(): void {
-  const insertService = db.prepare(`
-    INSERT OR IGNORE INTO services (id, name, url, environment, poll_interval_sec, timeout_sec, secret_key, muted, enabled, created_at)
-    VALUES ($id, $name, $url, $environment, $poll_interval_sec, $timeout_sec, $secret_key, $muted, $enabled, $created_at)
-  `);
-
-  insertService.run({
-    $id: 'srv-1',
-    $name: 'Laravel E-Commerce API',
-    $url: 'https://api.store.example.com/ketari/health',
-    $environment: 'production',
-    $poll_interval_sec: 15,
-    $timeout_sec: 5,
-    $secret_key: 'sk_live_998124719',
-    $muted: 0,
-    $enabled: 1,
-    $created_at: new Date().toISOString(),
-  });
-
-  insertService.run({
-    $id: 'srv-2',
-    $name: 'Payment Processing Worker',
-    $url: 'https://pay-worker.example.com/api/health',
-    $environment: 'production',
-    $poll_interval_sec: 30,
-    $timeout_sec: 5,
-    $secret_key: null,
-    $muted: 0,
-    $enabled: 1,
-    $created_at: new Date().toISOString(),
-  });
-
-  insertService.run({
-    $id: 'srv-3',
-    $name: 'Notification & Email Queue',
-    $url: 'https://notify.example.com/ketari/health',
-    $environment: 'staging',
-    $poll_interval_sec: 30,
-    $timeout_sec: 5,
-    $secret_key: null,
-    $muted: 0,
-    $enabled: 1,
-    $created_at: new Date().toISOString(),
-  });
 
   addAuditLog({
     user_id: 'system',
     user_name: 'Database Initializer',
     action: 'INIT_DATABASE',
-    details: 'Database tables initialized & default services seeded',
+    details: 'Database schema initialized successfully',
     timestamp: new Date().toISOString(),
   });
 }
+
+// Run schema setup automatically
+initializeSchema();
 
 // Service queries
 export function getAllServices(): ServiceConfig[] {

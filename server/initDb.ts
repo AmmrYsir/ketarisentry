@@ -1,4 +1,4 @@
-import { initializeSchema, seedDefaultData, dbPath } from './db';
+import { initializeSchema, dbPath } from './db';
 
 console.log('----------------------------------------------------');
 console.log('🛡️ KetariSentry First-Timer Database Initializer');
@@ -7,9 +7,7 @@ console.log(`📂 Database Location: ${dbPath}`);
 
 try {
   initializeSchema();
-  seedDefaultData();
-  console.log('✅ SQLite Database tables created successfully.');
-  console.log('✅ Default telemetry service seeds populated.');
+  console.log('✅ SQLite Database schema initialized cleanly.');
   console.log('🎉 Setup complete! You can now run "bun run server" or "bun dev".');
   console.log('----------------------------------------------------');
 } catch (err: any) {

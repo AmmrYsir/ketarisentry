@@ -9,7 +9,8 @@ export const LoginModal: React.FC = () => {
     loginWithSandbox, 
     loginWithGoogleToken, 
     isSandboxAllowed, 
-    googleClientId 
+    googleClientId,
+    isAuthenticated
   } = useAuth();
 
   if (!isLoginModalOpen) return null;
@@ -18,12 +19,14 @@ export const LoginModal: React.FC = () => {
     <div className="fixed inset-0 z-50 bg-slate-950/85 backdrop-blur-md flex items-center justify-center p-4 animate-in fade-in duration-200">
       <div className="w-full max-w-md bg-slate-900 border border-slate-800 rounded-3xl p-6 sm:p-8 shadow-[8px_8px_32px_rgba(0,0,0,0.8)] relative text-center">
         
-        <button
-          onClick={closeLoginModal}
-          className="absolute top-4 right-4 p-2 rounded-xl bg-slate-800 text-slate-400 hover:text-white transition-all"
-        >
-          <X className="w-5 h-5" />
-        </button>
+        {isAuthenticated && (
+          <button
+            onClick={closeLoginModal}
+            className="absolute top-4 right-4 p-2 rounded-xl bg-slate-800 text-slate-400 hover:text-white transition-all"
+          >
+            <X className="w-5 h-5" />
+          </button>
+        )}
 
         {/* Brand Icon */}
         <div className="w-14 h-14 rounded-3xl bg-gradient-to-tr from-emerald-500 to-indigo-600 p-0.5 mx-auto mb-4 shadow-[4px_4px_12px_rgba(0,0,0,0.4)]">

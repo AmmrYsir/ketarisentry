@@ -51,9 +51,9 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
 
     const demoUser: AuthUser = {
       id: 'usr_sandbox_99',
-      name: 'Ammar (Demo Admin)',
-      email: 'ammar.dev@ketarisentry.io',
-      avatar: 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?auto=format&fit=crop&w=256&q=80',
+      name: 'System Admin',
+      email: 'admin@ketarisentry.io',
+      avatar: 'https://api.dicebear.com/7.x/bottts/svg?seed=Admin',
       role,
       is_sandbox: true,
     };
@@ -72,19 +72,18 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
           setIsLoginModalOpen(true);
         } else {
           setUser(parsed);
+          setIsLoginModalOpen(false);
         }
       } catch {
         localStorage.removeItem(LOCAL_STORAGE_KEY);
-        if (!isSandboxAllowed) setIsLoginModalOpen(true);
-      }
-    } else {
-      if (isSandboxAllowed) {
-        loginWithSandbox('admin');
-      } else {
+        setUser(null);
         setIsLoginModalOpen(true);
       }
+    } else {
+      setUser(null);
+      setIsLoginModalOpen(true);
     }
-  }, [isSandboxAllowed, loginWithSandbox]);
+  }, [isSandboxAllowed]);
 
   const loginWithGoogleToken = (credentialResponse: any) => {
     let email = 'user@google.com';

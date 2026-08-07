@@ -104,7 +104,7 @@ export async function initializeSchema(): Promise<void> {
       $email: 'superadmin@ketarisentry.io',
       $password_hash: defaultPasswordHash,
       $avatar: 'https://api.dicebear.com/7.x/bottts/svg?seed=Superadmin',
-      $role: 'admin',
+      $role: 'superadmin',
       $email_verified: 1,
       $is_sandbox: 0,
       $last_login_at: new Date().toISOString(),

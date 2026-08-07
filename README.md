@@ -2,7 +2,7 @@
 
 **Ketarisentry** is a modern, minimalist, central health & queue monitoring hub built for multi-tenant service infrastructure with first-class support for **Laravel applications**.
 
-Built with **Bun + Vite + React 19 + TypeScript + React Compiler**, Ketarisentry offers real-time pull polling, queue job failure inspection, SSL cert expiry tracking, Email/Password & Magic Link authentication, and a clean **Claymorphic UI** design system.
+Built with **Bun + Vite + React 19 + TypeScript + React Compiler**, Ketarisentry offers real-time pull polling, queue job failure inspection, SSL cert expiry tracking, Email/Password & Magic Link authentication, Fail2ban logging, Docker containerization, and a clean **Claymorphic UI** design system.
 
 ---
 
@@ -10,25 +10,20 @@ Built with **Bun + Vite + React 19 + TypeScript + React Compiler**, Ketarisentry
 
 - 🗄️ **Native Bun + SQLite Database**: Permanent telemetry log storage (`ketarisentry.db`), failed job exception archives, and user profiles powered by `bun:sqlite`.
 - 🔐 **Email & Password + Magic Link Authentication**: Native password hashing using `Bun.password.hash` & `Bun.password.verify`, alongside Magic Link authorization for verified accounts.
+- 🛡️ **Sliding Window Rate Limiter & Fail2ban Logging**: Prevents credential brute-forcing by capping auth attempts (5 max / 15 min per IP) and emitting Fail2ban-ready logs to `logs/auth.log`.
+- 🐳 **Docker & Docker Compose Ready**: Production-optimized container deployment (`Dockerfile` & `docker-compose.yml`) with volume mounts for `database/` and `logs/`.
 - 📋 **Security & Configuration Audit Logs**: Chronological audit trail tracking all service registrations, updates, muting, deletions, and user login events.
 - 🎯 **Automated Pull Polling**: Periodically probes HTTP `/healthz` endpoints with custom polling intervals (15s - 300s) and timeout management.
 - 🐘 **Laravel Queue & Horizon Telemetry**: Deep visibility into Redis queue backlogs, pending job counts, active Horizon workers, and failed job stack traces.
 - 📖 **Dedicated Laravel Integration Guide**: Step-by-step guide in [LARAVEL_INTEGRATION.md](file:///c:/Users/ammar/Desktop/ketarisentry/LARAVEL_INTEGRATION.md) for quick copy-paste setup.
-- 🛡️ **SSL Certificate Expiry Checker**: Real-time SSL validity tracking with automated warnings when certificates expire in `< 14 days`.
 - 🎨 **Minimalist Claymorphic UI**: High-contrast, tactile design system with soft drop-shadows, pill badges, and responsive layouts.
-- 🚨 **Incident & State Machine**: Fleet-wide status tracking (`Operational`, `Degraded`, `Outage`, `Maintenance`).
-- ⏸️ **Maintenance Mode & Muting**: Temporarily pause polling and suppress alerts during planned Laravel deployments.
 - 📦 **Fleet Config Export/Import**: Easily backup and transfer service health configurations as JSON.
 
 ---
 
 ## 🚀 Quick Start
 
-### Prerequisites
-
-Ensure you have **[Bun](https://bun.sh)** installed on your machine.
-
-### Installation
+### Option A: Local Bun Setup
 
 ```bash
 # Clone the repository
@@ -49,18 +44,54 @@ Open [http://localhost:5173](http://localhost:5173) in your browser.
 
 ---
 
-## 🔑 Authentication & Initial Superadmin
+### Option B: Docker Compose Deployment 🐳
 
-Ketarisentry features native **Email + Password** and **Magic Link** authentication.
+```bash
+# Build and launch Ketarisentry container in background
+docker compose up -d
 
-1. **Initial Seeded Account**:
-   - Running `bun run db:init` seeds the initial superadmin account into SQLite:
-     - **Email**: `superadmin@ketarisentry.io`
-     - **Role**: `admin`
-     - **Email Verified**: `1`
+# Check running container status
+docker compose ps
 
-2. **Development Sandbox Demo**:
-   - In non-production environments (`VITE_APP_ENV="development"`), guest users can click **"Enter Sandbox as Superadmin"** for instant 1-click testing without credentials.
+# View Fail2ban auth logs inside container
+docker compose exec ketarisentry tail -f logs/auth.log
+```
+
+---
+
+## 🔒 Security & Fail2ban Configuration
+
+### 1. Sliding Window Rate Limiter
+- **Limit**: 5 attempts per 15-minute window per IP address on `/api/auth/login` and `/api/auth/magic-link`.
+- **Response**: Rejects excess requests with HTTP 429 (`Too Many Requests`) and sets `Retry-After` headers.
+
+### 2. Linux Fail2ban Integration
+Ketarisentry writes structured logs to `logs/auth.log`.
+
+**Sample Log Format**:
+```log
+2026-08-07 23:32:00 [FAIL2BAN] AUTH_FAIL IP=192.168.1.50 EMAIL=user@domain.com REASON="Invalid credentials"
+2026-08-07 23:32:05 [FAIL2BAN] RATE_LIMIT IP=192.168.1.50 EMAIL=user@domain.com REASON="Rate limit exceeded"
+```
+
+**Filter Setup (`/etc/fail2ban/filter.d/ketarisentry.conf`)**:
+```ini
+[Definition]
+failregex = ^.* \[FAIL2BAN\] (AUTH_FAIL|RATE_LIMIT) IP=<HOST>
+ignoreregex =
+```
+
+---
+
+## 🔑 Initial Superadmin Account
+
+- Running `bun run db:init` (or starting via Docker) seeds the initial superadmin account into SQLite:
+  - **Email**: `superadmin@ketarisentry.io`
+  - **Role**: `admin`
+  - **Email Verified**: `1`
+
+- **Development Sandbox Demo**:
+  - In non-production environments (`VITE_APP_ENV="development"`), guest users can click **"Enter Sandbox as Superadmin"** for instant 1-click testing without credentials.
 
 ---
 
@@ -106,171 +137,6 @@ Ketarisentry polls standard JSON health endpoints on your target services. Below
     "days_remaining": 64
   }
 }
-```
-
----
-
-## 🐘 Production-Grade Laravel Health Controller & Service
-
-Here is a modular, high-performance, object-oriented Laravel service pattern (`app/Services/KetariHealthService.php` and `app/Http/Controllers/KetariHealthController.php`) featuring **10-second response caching** and dynamic check registration:
-
-### 1. Health Service (`app/Services/KetariHealthService.php`)
-
-```php
-<?php
-
-namespace App\Services;
-
-use Illuminate\Support\Facades\Cache;
-use Illuminate\Support\Facades\DB;
-use Illuminate\Support\Facades\Redis;
-use Illuminate\Support\Facades\Queue;
-
-class KetariHealthService
-{
-    /**
-     * Get dynamic health checks payload with 10s caching for scalability.
-     */
-    public function getHealthPayload(): array
-    {
-        return Cache::remember('ketari_health_payload', 10, function () {
-            $startTime = microtime(true);
-
-            // 1. Database Check
-            $dbStart = microtime(true);
-            $dbStatus = 'ok';
-            try {
-                DB::connection()->getPdo();
-            } catch (\Throwable $e) {
-                $dbStatus = 'critical';
-            }
-            $dbLatency = round((microtime(true) - $dbStart) * 1000, 2);
-
-            // 2. Redis Check
-            $redisStart = microtime(true);
-            $redisStatus = 'ok';
-            try {
-                Redis::connection()->ping();
-            } catch (\Throwable $e) {
-                $redisStatus = 'critical';
-            }
-            $redisLatency = round((microtime(true) - $redisStart) * 1000, 2);
-
-            // 3. Queue & Failed Jobs Check
-            $pendingJobs = 0;
-            $failedJobs24h = 0;
-            $recentFailed = [];
-            try {
-                $pendingJobs = Queue::size();
-                if (DB::getSchemaBuilder()->hasTable('failed_jobs')) {
-                    $failedJobs24h = DB::table('failed_jobs')
-                        ->where('failed_at', '>=', now()->subHours(24))
-                        ->count();
-
-                    $recentFailed = DB::table('failed_jobs')
-                        ->orderBy('failed_at', 'desc')
-                        ->limit(5)
-                        ->get()
-                        ->map(fn ($job) => [
-                            'id' => (string) $job->id,
-                            'job_name' => json_decode($job->payload)->displayName ?? $job->queue,
-                            'queue' => $job->queue,
-                            'failed_at' => $job->failed_at,
-                            'exception_class' => strtok($job->exception, ":"),
-                            'message' => substr(strtok($job->exception, "\n"), 0, 150),
-                            'trace' => substr($job->exception, 0, 1500),
-                        ]);
-                }
-            } catch (\Throwable $e) {}
-
-            $totalLatency = round((microtime(true) - $startTime) * 1000, 2);
-            $overallStatus = ($dbStatus === 'ok' && $redisStatus === 'ok') ? 'operational' : 'degraded';
-
-            return [
-                'service' => config('app.name', 'Laravel App'),
-                'environment' => config('app.env', 'production'),
-                'status' => $overallStatus,
-                'latency_ms' => $totalLatency,
-                'system_metrics' => [
-                    'memory_usage_mb' => round(memory_get_usage(true) / 1024 / 1024, 2),
-                    'disk_free_gb' => round(@disk_free_space(base_path()) / 1024 / 1024 / 1024, 2),
-                ],
-                'checks' => [
-                    'database' => [
-                        'name' => 'MySQL Primary Database',
-                        'type' => 'database',
-                        'status' => $dbStatus,
-                        'latency_ms' => $dbLatency,
-                    ],
-                    'redis' => [
-                        'name' => 'Redis Cache & Queue',
-                        'type' => 'redis',
-                        'status' => $redisStatus,
-                        'latency_ms' => $redisLatency,
-                    ],
-                    'scheduler' => [
-                        'name' => 'Artisan Scheduler',
-                        'type' => 'scheduler',
-                        'status' => 'ok',
-                        'message' => 'Heartbeat active',
-                    ],
-                ],
-                'queue' => [
-                    'horizon_active' => true,
-                    'pending_jobs' => $pendingJobs,
-                    'failed_jobs_24h' => $failedJobs24h,
-                    'queues' => [
-                        'default' => $pendingJobs,
-                    ],
-                    'recent_failed_jobs' => $recentFailed,
-                ],
-                'ssl' => [
-                    'valid' => true,
-                    'days_remaining' => 90
-                ]
-            ];
-        });
-    }
-}
-```
-
-### 2. Health Controller (`app/Http/Controllers/KetariHealthController.php`)
-
-```php
-<?php
-
-namespace App\Http\Controllers;
-
-use App\Services\KetariHealthService;
-use Illuminate\Http\JsonResponse;
-use Illuminate\Http\Request;
-
-class KetariHealthController extends Controller
-{
-    public function __invoke(Request $request, KetariHealthService $healthService): JsonResponse
-    {
-        // 1. Optional Secret Key Authorization
-        $secret = config('services.ketari.secret');
-        if ($secret && $request->header('X-Ketari-Secret') !== $secret) {
-            return response()->json(['error' => 'Unauthorized Secret Key'], 401);
-        }
-
-        $payload = $healthService->getHealthPayload();
-
-        return response()->json($payload, 200, [
-            'Access-Control-Allow-Origin' => '*',
-            'Access-Control-Allow-Headers' => 'X-Ketari-Secret, Authorization, Content-Type',
-            'Access-Control-Allow-Methods' => 'GET, OPTIONS',
-        ]);
-    }
-}
-```
-
-Register in `routes/api.php`:
-```php
-use App\Http\Controllers\KetariHealthController;
-
-Route::get('/ketari/health', KetariHealthController::class);
 ```
 
 ---

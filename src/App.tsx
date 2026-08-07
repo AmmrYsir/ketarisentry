@@ -1,10 +1,10 @@
 import React, { useState } from 'react';
-import { AuthProvider } from './context/AuthContext';
+import { AuthProvider, useAuth } from './context/AuthContext';
 import { HealthProvider, useHealth } from './context/HealthContext';
 import { Header } from './components/Header';
 import { ServiceCard } from './components/ServiceCard';
 import { ServiceModal } from './components/ServiceModal';
-import { LoginModal } from './components/LoginModal';
+import { LoginPage } from './components/LoginPage';
 import { QueueInspectorModal } from './components/QueueInspectorModal';
 import { AuditLogModal } from './components/AuditLogModal';
 import { IncidentTimeline } from './components/IncidentTimeline';
@@ -185,13 +185,13 @@ const DashboardContent: React.FC = () => {
           {filteredServices.length === 0 ? (
             <div className="bg-slate-900/90 rounded-3xl p-12 border border-slate-800/80 shadow-[6px_6px_16px_rgba(0,0,0,0.4)] text-center">
               <Server className="w-10 h-10 text-slate-400 mx-auto mb-3 opacity-60" />
-              <h3 className="text-base font-bold text-slate-200">No Services Found</h3>
+              <h3 className="text-base font-bold text-slate-200">No Services Monitored</h3>
               <p className="text-xs text-slate-400 mt-1 max-w-sm mx-auto">
-                No services matched your search filters. Try clearing filters or add a new Laravel health endpoint.
+                Your monitoring fleet is empty. Add your first Laravel /ketari/health endpoint to start tracking service status.
               </p>
               <button
                 onClick={() => openAddModal()}
-                className="mt-4 px-4 py-2 rounded-xl bg-emerald-600 hover:bg-emerald-500 text-white text-xs font-semibold inline-flex items-center space-x-1.5"
+                className="mt-4 px-4 py-2 rounded-xl bg-emerald-600 hover:bg-emerald-500 text-white text-xs font-semibold inline-flex items-center space-x-1.5 cursor-pointer"
               >
                 <Plus className="w-4 h-4" />
                 <span>Add Target Service</span>
@@ -218,24 +218,35 @@ const DashboardContent: React.FC = () => {
 
       {/* Footer */}
       <footer className="border-t border-slate-800/80 py-6 text-center text-xs text-slate-400">
-        <p>KetariSentry &copy; {new Date().getFullYear()} &bull; Bun + Vite + React Compiler Health Hub</p>
+        <p>KetariSentry &copy; {new Date().getFullYear()} &bull; Central Health & Queue Telemetry Hub</p>
       </footer>
 
       {/* Modals & Drawers */}
       <ServiceModal />
-      <LoginModal />
       <QueueInspectorModal />
       <AuditLogModal isOpen={isAuditModalOpen} onClose={() => setIsAuditModalOpen(false)} />
     </div>
   );
 };
 
+const MainContent: React.FC = () => {
+  const { isAuthenticated } = useAuth();
+
+  if (!isAuthenticated) {
+    return <LoginPage />;
+  }
+
+  return (
+    <HealthProvider>
+      <DashboardContent />
+    </HealthProvider>
+  );
+};
+
 export default function App() {
   return (
     <AuthProvider>
-      <HealthProvider>
-        <DashboardContent />
-      </HealthProvider>
+      <MainContent />
     </AuthProvider>
   );
 }

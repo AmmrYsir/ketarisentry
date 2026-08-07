@@ -28,8 +28,12 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
 
   const googleClientId = import.meta.env.VITE_GOOGLE_CLIENT_ID || null;
 
-  // Determine environment mode using standard Vite MODE & NODE_ENV
-  const envMode = (import.meta.env.MODE || 'development').toLowerCase();
+  // Determine environment mode from standard VITE_APP_ENV or Vite MODE
+  const envMode = (
+    import.meta.env.VITE_APP_ENV ||
+    import.meta.env.MODE ||
+    'development'
+  ).toLowerCase().trim();
   const isProduction = envMode === 'production' || envMode === 'prod';
   const isSandboxAllowed = !isProduction;
 

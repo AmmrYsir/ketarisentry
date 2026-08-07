@@ -10,6 +10,7 @@ import {
   authenticateUserWithPassword
 } from './db';
 import { executePullPoll } from '../src/services/pollingEngine';
+import { logAuthEvent } from './authLogger';
 import type { ServiceConfig, AuthUser } from '../src/types';
 
 const PORT = process.env.PORT || 3001;
@@ -144,11 +145,15 @@ Bun.serve({
         return Response.json(logs, { headers: securityHeaders });
       }
 
-      // 6. POST /api/auth/login (Email + Password Authentication with Rate Limiting)
+      // 6. POST /api/auth/login (Email + Password Authentication with Rate Limiting & Fail2ban Logging)
       if (url.pathname === '/api/auth/login' && req.method === 'POST') {
+        const body = (await req.json()) as { email?: string; password?: string };
+        const userEmail = body.email || '';
+
         // Enforce Rate Limit (Max 5 attempts per 15 minutes)
         const rateLimit = checkRateLimit(clientIp);
         if (!rateLimit.allowed) {
+          logAuthEvent('RATE_LIMIT', clientIp, userEmail, `Rate limit exceeded. Cooldown: ${rateLimit.retryAfterSec}s`);
           return Response.json(
             { error: `Too many failed authentication attempts. Please try again in ${rateLimit.retryAfterSec} seconds.` },
             { 
@@ -161,16 +166,18 @@ Bun.serve({
           );
         }
 
-        const body = (await req.json()) as { email?: string; password?: string };
-        
         if (!body.email || !body.password) {
+          logAuthEvent('AUTH_FAIL', clientIp, userEmail, 'Missing email or password');
           return Response.json({ error: 'Email and password are required' }, { status: 400, headers: securityHeaders });
         }
 
         const authenticatedUser = await authenticateUserWithPassword(body.email, body.password);
         if (!authenticatedUser) {
+          logAuthEvent('AUTH_FAIL', clientIp, userEmail, 'Invalid credentials');
           return Response.json({ error: 'Invalid email address or password' }, { status: 401, headers: securityHeaders });
         }
+
+        logAuthEvent('AUTH_SUCCESS', clientIp, userEmail, `User signed in (Role: ${authenticatedUser.role})`);
 
         addAuditLog({
           user_id: authenticatedUser.id,
@@ -183,11 +190,15 @@ Bun.serve({
         return Response.json({ success: true, user: authenticatedUser }, { headers: securityHeaders });
       }
 
-      // 7. POST /api/auth/magic-link (Magic Link Authentication with Rate Limiting)
+      // 7. POST /api/auth/magic-link (Magic Link Authentication with Rate Limiting & Fail2ban Logging)
       if (url.pathname === '/api/auth/magic-link' && req.method === 'POST') {
+        const body = (await req.json()) as { email?: string };
+        const userEmail = body.email || '';
+
         // Enforce Rate Limit (Max 5 attempts per 15 minutes)
         const rateLimit = checkRateLimit(clientIp);
         if (!rateLimit.allowed) {
+          logAuthEvent('RATE_LIMIT', clientIp, userEmail, `Rate limit exceeded. Cooldown: ${rateLimit.retryAfterSec}s`);
           return Response.json(
             { error: `Too many magic link requests. Please try again in ${rateLimit.retryAfterSec} seconds.` },
             { 
@@ -200,14 +211,14 @@ Bun.serve({
           );
         }
 
-        const body = (await req.json()) as { email?: string };
-        
         if (!body.email) {
+          logAuthEvent('AUTH_FAIL', clientIp, userEmail, 'Missing email address');
           return Response.json({ error: 'Email address is required' }, { status: 400, headers: securityHeaders });
         }
 
         const existingUser = findUserByEmail(body.email);
         if (!existingUser || !existingUser.email_verified) {
+          logAuthEvent('AUTH_FAIL', clientIp, userEmail, 'No verified account found');
           return Response.json(
             { error: 'No verified account found for this email address' },
             { status: 404, headers: securityHeaders }
@@ -223,6 +234,8 @@ Bun.serve({
           email_verified: existingUser.email_verified,
           is_sandbox: existingUser.is_sandbox,
         };
+
+        logAuthEvent('AUTH_SUCCESS', clientIp, userEmail, `User signed in via Magic Link (Role: ${userPayload.role})`);
 
         addAuditLog({
           user_id: userPayload.id,

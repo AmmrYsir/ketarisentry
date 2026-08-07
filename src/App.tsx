@@ -8,6 +8,7 @@ import { LoginPage } from './components/LoginPage';
 import { QueueInspectorModal } from './components/QueueInspectorModal';
 import { AuditLogModal } from './components/AuditLogModal';
 import { IncidentTimeline } from './components/IncidentTimeline';
+import { CustomSelect } from './components/CustomSelect';
 import { 
   Search, 
   Server, 
@@ -160,30 +161,30 @@ const DashboardContent: React.FC = () => {
 
             {/* Environment & Status Filter Dropdowns */}
             <div className="flex items-center space-x-2.5 select-none">
-              <select
+              <CustomSelect
                 value={selectedEnv}
-                onChange={(e) => setSelectedEnv(e.target.value)}
-                className="py-2.5 px-3 rounded-2xl bg-slate-950 border border-slate-800 text-xs text-slate-300 focus:outline-none focus:border-emerald-500 cursor-pointer shadow-[inset_2px_2px_4px_rgba(0,0,0,0.4)]"
-                aria-label="Filter by Environment"
-              >
-                <option value="all">Env: All</option>
-                <option value="production">Production</option>
-                <option value="staging">Staging</option>
-                <option value="local">Local</option>
-              </select>
+                onChange={(val) => setSelectedEnv(val)}
+                options={[
+                  { value: 'all', label: 'Env: All' },
+                  { value: 'production', label: 'Production' },
+                  { value: 'staging', label: 'Staging' },
+                  { value: 'local', label: 'Local' },
+                ]}
+                ariaLabel="Filter by Environment"
+              />
 
-              <select
+              <CustomSelect
                 value={selectedStatus}
-                onChange={(e) => setSelectedStatus(e.target.value)}
-                className="py-2.5 px-3 rounded-2xl bg-slate-950 border border-slate-800 text-xs text-slate-300 focus:outline-none focus:border-emerald-500 cursor-pointer shadow-[inset_2px_2px_4px_rgba(0,0,0,0.4)]"
-                aria-label="Filter by Health Status"
-              >
-                <option value="all">Status: All</option>
-                <option value="operational">Operational</option>
-                <option value="degraded">Degraded</option>
-                <option value="outage">Outage</option>
-                <option value="maintenance">Muted</option>
-              </select>
+                onChange={(val) => setSelectedStatus(val)}
+                options={[
+                  { value: 'all', label: 'Status: All' },
+                  { value: 'operational', label: 'Operational' },
+                  { value: 'degraded', label: 'Degraded' },
+                  { value: 'outage', label: 'Outage' },
+                  { value: 'maintenance', label: 'Muted' },
+                ]}
+                ariaLabel="Filter by Health Status"
+              />
             </div>
           </div>
         </div>

@@ -15,14 +15,13 @@ import {
 } from 'lucide-react';
 import { useAuth } from '../context/AuthContext';
 import { useHealth } from '../context/HealthContext';
-import type { UserRole } from '../types';
 
 interface HeaderProps {
   onOpenAuditLog?: () => void;
 }
 
 export const Header: React.FC<HeaderProps> = ({ onOpenAuditLog }) => {
-  const { user, isAuthenticated, logout, setUserRole } = useAuth();
+  const { user, isAuthenticated, logout } = useAuth();
   const { 
     services, 
     results, 
@@ -203,17 +202,9 @@ export const Header: React.FC<HeaderProps> = ({ onOpenAuditLog }) => {
                     <span className="text-[9px] px-1.5 py-0.2 rounded bg-amber-950 text-amber-400 font-medium">Demo</span>
                   )}
                 </div>
-                {/* Role Selector */}
-                <select
-                  value={user?.role}
-                  onChange={(e) => setUserRole(e.target.value as UserRole)}
-                  className="bg-transparent text-[10px] text-slate-400 focus:outline-none cursor-pointer hover:text-slate-200"
-                  aria-label="Select User Role"
-                >
-                  <option value="admin" className="bg-slate-900 text-slate-200">Role: Admin</option>
-                  <option value="operator" className="bg-slate-900 text-slate-200">Role: Operator</option>
-                  <option value="viewer" className="bg-slate-900 text-slate-200">Role: Viewer</option>
-                </select>
+                <span className="text-[10px] text-slate-400 capitalize block font-medium">
+                  Role: {user?.role || 'Admin'}
+                </span>
               </div>
               <button
                 onClick={logout}

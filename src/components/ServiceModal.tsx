@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { X, Server } from 'lucide-react';
 import { useHealth } from '../context/HealthContext';
+import { CustomSelect } from './CustomSelect';
 
 export const ServiceModal: React.FC = () => {
   const { isAddModalOpen, editingService, closeAddModal, saveService } = useHealth();
@@ -120,31 +121,31 @@ export const ServiceModal: React.FC = () => {
           <div className="grid grid-cols-2 gap-3">
             <div>
               <label htmlFor="service-env" className="block text-xs font-semibold text-slate-300 mb-1.5 cursor-pointer">Environment</label>
-              <select
-                id="service-env"
+              <CustomSelect
                 value={environment}
-                onChange={(e) => setEnvironment(e.target.value as any)}
-                className="w-full px-3.5 py-2.5 rounded-xl bg-slate-950 border border-slate-800 text-slate-200 text-xs focus:outline-none focus:border-emerald-500 transition-all shadow-[inset_2px_2px_4px_rgba(0,0,0,0.4)] cursor-pointer"
-              >
-                <option value="production" className="bg-slate-900">Production</option>
-                <option value="staging" className="bg-slate-900">Staging</option>
-                <option value="local" className="bg-slate-900">Local / Dev</option>
-              </select>
+                onChange={(val) => setEnvironment(val as any)}
+                options={[
+                  { value: 'production', label: 'Production' },
+                  { value: 'staging', label: 'Staging' },
+                  { value: 'local', label: 'Local / Dev' },
+                ]}
+                ariaLabel="Select Environment"
+              />
             </div>
 
             <div>
               <label htmlFor="poll-interval" className="block text-xs font-semibold text-slate-300 mb-1.5 cursor-pointer">Polling Frequency</label>
-              <select
-                id="poll-interval"
+              <CustomSelect
                 value={pollInterval}
-                onChange={(e) => setPollInterval(Number(e.target.value))}
-                className="w-full px-3.5 py-2.5 rounded-xl bg-slate-950 border border-slate-800 text-slate-200 text-xs focus:outline-none focus:border-emerald-500 transition-all shadow-[inset_2px_2px_4px_rgba(0,0,0,0.4)] cursor-pointer"
-              >
-                <option value={15} className="bg-slate-900">Every 15 seconds (High Frequency)</option>
-                <option value={30} className="bg-slate-900">Every 30 seconds</option>
-                <option value={60} className="bg-slate-900">Every 1 minute</option>
-                <option value={300} className="bg-slate-900">Every 5 minutes</option>
-              </select>
+                onChange={(val) => setPollInterval(Number(val))}
+                options={[
+                  { value: 15, label: 'Every 15 seconds (High Frequency)' },
+                  { value: 30, label: 'Every 30 seconds' },
+                  { value: 60, label: 'Every 1 minute' },
+                  { value: 300, label: 'Every 5 minutes' },
+                ]}
+                ariaLabel="Select Polling Frequency"
+              />
             </div>
           </div>
 
@@ -152,16 +153,16 @@ export const ServiceModal: React.FC = () => {
           <div className="grid grid-cols-2 gap-3">
             <div>
               <label htmlFor="timeout-limit" className="block text-xs font-semibold text-slate-300 mb-1.5 cursor-pointer">Timeout Limit</label>
-              <select
-                id="timeout-limit"
+              <CustomSelect
                 value={timeoutSec}
-                onChange={(e) => setTimeoutSec(Number(e.target.value))}
-                className="w-full px-3.5 py-2.5 rounded-xl bg-slate-950 border border-slate-800 text-slate-200 text-xs focus:outline-none focus:border-emerald-500 transition-all shadow-[inset_2px_2px_4px_rgba(0,0,0,0.4)] cursor-pointer"
-              >
-                <option value={2} className="bg-slate-900">2 Seconds</option>
-                <option value={5} className="bg-slate-900">5 Seconds (Recommended)</option>
-                <option value={10} className="bg-slate-900">10 Seconds</option>
-              </select>
+                onChange={(val) => setTimeoutSec(Number(val))}
+                options={[
+                  { value: 2, label: '2 Seconds' },
+                  { value: 5, label: '5 Seconds (Recommended)' },
+                  { value: 10, label: '10 Seconds' },
+                ]}
+                ariaLabel="Select Timeout Limit"
+              />
             </div>
 
             <div>

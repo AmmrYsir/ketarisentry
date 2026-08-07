@@ -68,7 +68,7 @@ export async function fetchAuditLogsFromApi(): Promise<AuditLogEntry[]> {
 
 export async function syncUserLoginWithApi(user: AuthUser): Promise<void> {
   try {
-    await fetch(`${API_BASE}/auth/login`, {
+    await fetch(`${API_BASE}/auth/sync`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify(user),

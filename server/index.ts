@@ -1,4 +1,14 @@
-import { getAllServices, saveServiceToDb, deleteServiceFromDb, recordPollLog, getAllAuditLogs, addAuditLog, upsertUser } from './db';
+import { 
+  getAllServices, 
+  saveServiceToDb, 
+  deleteServiceFromDb, 
+  recordPollLog, 
+  getAllAuditLogs, 
+  addAuditLog, 
+  upsertUser,
+  findUserByEmail,
+  authenticateUserWithPassword
+} from './db';
 import { executePullPoll } from '../src/services/pollingEngine';
 import type { ServiceConfig, AuthUser } from '../src/types';
 
@@ -101,8 +111,69 @@ Bun.serve({
         return Response.json(logs, { headers: corsHeaders });
       }
 
-      // 6. POST /api/auth/login
+      // 6. POST /api/auth/login (Email + Password Authentication)
       if (url.pathname === '/api/auth/login' && req.method === 'POST') {
+        const body = (await req.json()) as { email?: string; password?: string };
+        
+        if (!body.email || !body.password) {
+          return Response.json({ error: 'Email and password are required' }, { status: 400, headers: corsHeaders });
+        }
+
+        const authenticatedUser = await authenticateUserWithPassword(body.email, body.password);
+        if (!authenticatedUser) {
+          return Response.json({ error: 'Invalid email address or password' }, { status: 401, headers: corsHeaders });
+        }
+
+        addAuditLog({
+          user_id: authenticatedUser.id,
+          user_name: authenticatedUser.name,
+          action: 'USER_LOGIN',
+          details: `User signed in via Email/Password (Role: ${authenticatedUser.role})`,
+          timestamp: new Date().toISOString(),
+        });
+
+        return Response.json({ success: true, user: authenticatedUser }, { headers: corsHeaders });
+      }
+
+      // 7. POST /api/auth/magic-link (Magic Link Authentication for Verified Emails)
+      if (url.pathname === '/api/auth/magic-link' && req.method === 'POST') {
+        const body = (await req.json()) as { email?: string };
+        
+        if (!body.email) {
+          return Response.json({ error: 'Email address is required' }, { status: 400, headers: corsHeaders });
+        }
+
+        const existingUser = findUserByEmail(body.email);
+        if (!existingUser || !existingUser.email_verified) {
+          return Response.json(
+            { error: 'No verified account found for this email address' },
+            { status: 404, headers: corsHeaders }
+          );
+        }
+
+        const userPayload: AuthUser = {
+          id: existingUser.id,
+          name: existingUser.name,
+          email: existingUser.email,
+          avatar: existingUser.avatar,
+          role: existingUser.role,
+          email_verified: existingUser.email_verified,
+          is_sandbox: existingUser.is_sandbox,
+        };
+
+        addAuditLog({
+          user_id: userPayload.id,
+          user_name: userPayload.name,
+          action: 'USER_LOGIN',
+          details: `User signed in via Magic Link (Role: ${userPayload.role})`,
+          timestamp: new Date().toISOString(),
+        });
+
+        return Response.json({ success: true, user: userPayload }, { headers: corsHeaders });
+      }
+
+      // 8. POST /api/auth/sync (User Profile Sync for Sandbox/Demo Logins)
+      if (url.pathname === '/api/auth/sync' && req.method === 'POST') {
         const user = (await req.json()) as AuthUser;
         
         if (!user || !user.id || !user.email) {
@@ -115,7 +186,7 @@ Bun.serve({
           user_id: user.id,
           user_name: user.name,
           action: 'USER_LOGIN',
-          details: `User signed in (Role: ${user.role}, Sandbox: ${user.is_sandbox ? 'Yes' : 'No'})`,
+          details: `User signed in via Sandbox Demo (Role: ${user.role})`,
           timestamp: new Date().toISOString(),
         });
 

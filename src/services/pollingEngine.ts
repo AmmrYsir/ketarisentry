@@ -106,10 +106,13 @@ export async function executePullPoll(config: ServiceConfig): Promise<PollResult
     };
   }
 
-  try {
-    const controller = new AbortController();
-    const timeoutId = setTimeout(() => controller.abort(), config.timeout_sec * 1000);
+  // If this is a mock service URL (example.com), generate realistic mock telemetry
+  const isMockDomain = config.url.includes('example.com');
 
+  const controller = new AbortController();
+  const timeoutId = setTimeout(() => controller.abort(), config.timeout_sec * 1000);
+
+  try {
     const headers: Record<string, string> = {
       'Accept': 'application/json',
     };
@@ -126,8 +129,6 @@ export async function executePullPoll(config: ServiceConfig): Promise<PollResult
       signal: controller.signal,
     });
 
-    clearTimeout(timeoutId);
-
     const endTime = performance.now();
     const latency = Math.round(endTime - startTime);
 
@@ -141,11 +142,11 @@ export async function executePullPoll(config: ServiceConfig): Promise<PollResult
         system_metrics: data.system_metrics,
         queue: data.queue || {
           horizon_active: true,
-          pending_jobs: 12,
+          pending_jobs: 0,
           failed_jobs_24h: 0,
-          queues: { default: 12 },
+          queues: { default: 0 },
         },
-        ssl: data.ssl || { valid: true, days_remaining: 60 },
+        ssl: data.ssl || { valid: true, days_remaining: 90 },
         polled_at: new Date().toISOString(),
         latency_history: generateLatencyHistory(data.latency_ms || latency),
       };
@@ -160,24 +161,58 @@ export async function executePullPoll(config: ServiceConfig): Promise<PollResult
             type: 'system',
             status: 'warning',
             latency_ms: latency,
-            message: `HTTP ${response.status}: ${response.statusText}`,
+            message: `HTTP Error ${response.status}: ${response.statusText}`,
           },
         },
         queue: {
-          horizon_active: true,
-          pending_jobs: 45,
-          failed_jobs_24h: 3,
-          queues: { default: 45 },
+          horizon_active: false,
+          pending_jobs: 0,
+          failed_jobs_24h: 0,
+          queues: {},
         },
         ssl: { valid: true, days_remaining: 30 },
         polled_at: new Date().toISOString(),
-        error_message: `HTTP Error ${response.status}: ${response.statusText}`,
+        error_message: `HTTP ${response.status}: ${response.statusText}`,
         latency_history: generateLatencyHistory(latency),
       };
     }
-  } catch {
-    // Graceful fallback for mock telemetry mode when target URL is unreachable or hits CORS
-    return generateMockPollResult(config);
+  } catch (err: any) {
+    if (isMockDomain) {
+      return generateMockPollResult(config);
+    }
+
+    const endTime = performance.now();
+    const latency = Math.round(endTime - startTime);
+    const errorMessage = err?.name === 'AbortError' 
+      ? `Request timed out after ${config.timeout_sec}s`
+      : err?.message || 'Connection failed / Network error';
+
+    return {
+      service_id: config.id,
+      status: 'outage',
+      latency_ms: latency,
+      checks: {
+        network_probe: {
+          name: 'Target Service Connection',
+          type: 'system',
+          status: 'critical',
+          latency_ms: latency,
+          message: errorMessage,
+        },
+      },
+      queue: {
+        horizon_active: false,
+        pending_jobs: 0,
+        failed_jobs_24h: 0,
+        queues: {},
+      },
+      ssl: { valid: false, days_remaining: 0 },
+      polled_at: new Date().toISOString(),
+      error_message: errorMessage,
+      latency_history: generateLatencyHistory(latency),
+    };
+  } finally {
+    clearTimeout(timeoutId);
   }
 }
 
@@ -250,12 +285,6 @@ function generateMockPollResult(config: ServiceConfig): PollResult {
       type: 'scheduler',
       status: 'ok',
       message: 'Heartbeat active (30s ago)',
-    };
-    checks['meilisearch'] = {
-      name: 'Meilisearch Engine',
-      type: 'custom',
-      status: 'ok',
-      latency_ms: 12,
     };
   }
 

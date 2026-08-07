@@ -31,7 +31,15 @@ Bun.serve({
 
       // 2. POST /api/services
       if (url.pathname === '/api/services' && req.method === 'POST') {
-        const body = (await req.json()) as { service: ServiceConfig; user?: AuthUser };
+        const body = (await req.json()) as { service?: ServiceConfig; user?: AuthUser };
+        
+        if (!body || !body.service || !body.service.id || !body.service.name || !body.service.url) {
+          return Response.json(
+            { error: 'Invalid service payload. Mandatory fields: id, name, url.' },
+            { status: 400, headers: corsHeaders }
+          );
+        }
+
         saveServiceToDb(body.service);
 
         // Audit Log
@@ -49,6 +57,10 @@ Bun.serve({
       // 3. DELETE /api/services/:id
       if (url.pathname.startsWith('/api/services/') && req.method === 'DELETE') {
         const id = url.pathname.split('/')[3];
+        if (!id) {
+          return Response.json({ error: 'Service ID is required' }, { status: 400, headers: corsHeaders });
+        }
+
         const servicesBefore = getAllServices();
         const target = servicesBefore.find((s) => s.id === id);
 
@@ -70,6 +82,11 @@ Bun.serve({
       // 4. POST /api/poll
       if (url.pathname === '/api/poll' && req.method === 'POST') {
         const serviceConfig = (await req.json()) as ServiceConfig;
+        
+        if (!serviceConfig || !serviceConfig.id || !serviceConfig.url) {
+          return Response.json({ error: 'Valid service configuration required' }, { status: 400, headers: corsHeaders });
+        }
+
         const result = await executePullPoll(serviceConfig);
 
         // Record telemetry log into SQLite
@@ -87,6 +104,11 @@ Bun.serve({
       // 6. POST /api/auth/login
       if (url.pathname === '/api/auth/login' && req.method === 'POST') {
         const user = (await req.json()) as AuthUser;
+        
+        if (!user || !user.id || !user.email) {
+          return Response.json({ error: 'Valid user profile required' }, { status: 400, headers: corsHeaders });
+        }
+
         upsertUser(user);
 
         addAuditLog({

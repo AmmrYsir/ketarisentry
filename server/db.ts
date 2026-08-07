@@ -209,6 +209,10 @@ export function deleteServiceFromDb(id: string): void {
 
 // Telemetry & Poll Log queries
 export function recordPollLog(result: PollResult): void {
+  const allChecks = Object.values(result.checks || {});
+  const dbCheck = allChecks.find((c) => c.type === 'database');
+  const redisCheck = allChecks.find((c) => c.type === 'redis');
+
   db.prepare(`
     INSERT INTO poll_logs (service_id, status, latency_ms, db_status, redis_status, pending_jobs, failed_jobs_24h, ssl_days_remaining, error_message, polled_at)
     VALUES ($service_id, $status, $latency_ms, $db_status, $redis_status, $pending_jobs, $failed_jobs_24h, $ssl_days_remaining, $error_message, $polled_at)
@@ -216,8 +220,8 @@ export function recordPollLog(result: PollResult): void {
     $service_id: result.service_id,
     $status: result.status,
     $latency_ms: result.latency_ms,
-    $db_status: result.checks?.database?.status || 'ok',
-    $redis_status: result.checks?.redis?.status || 'ok',
+    $db_status: dbCheck?.status || 'ok',
+    $redis_status: redisCheck?.status || 'ok',
     $pending_jobs: result.queue?.pending_jobs || 0,
     $failed_jobs_24h: result.queue?.failed_jobs_24h || 0,
     $ssl_days_remaining: result.ssl?.days_remaining || 90,

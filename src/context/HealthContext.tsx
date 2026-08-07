@@ -69,29 +69,27 @@ export const HealthProvider: React.FC<{ children: ReactNode }> = ({ children }) 
     const targetConfig = services.find((s) => s.id === serviceId);
     if (!targetConfig) return;
 
-    // Try polling via SQLite API server first (logs to DB), fallback to client execution
     let res = await pollServiceViaApi(targetConfig);
     if (!res) {
       res = await executePullPoll(targetConfig);
     }
 
-    setResults((prev) => {
-      const prevRes = prev[serviceId];
-      if (prevRes && prevRes.status !== res!.status) {
-        const incident: Incident = {
-          id: `inc_${Date.now()}_${Math.random().toString(36).substring(2, 6)}`,
-          service_id: targetConfig.id,
-          service_name: targetConfig.name,
-          previous_status: prevRes.status,
-          new_status: res!.status,
-          reason: res!.error_message || `State transitioned to ${res!.status.toUpperCase()}`,
-          timestamp: new Date().toLocaleTimeString(),
-        };
-        setIncidents((incPrev) => [incident, ...incPrev.slice(0, 49)]);
-      }
-      return { ...prev, [serviceId]: res! };
-    });
-  }, [services]);
+    const prevRes = results[serviceId];
+    if (prevRes && prevRes.status !== res.status) {
+      const incident: Incident = {
+        id: `inc_${Date.now()}_${Math.random().toString(36).substring(2, 6)}`,
+        service_id: targetConfig.id,
+        service_name: targetConfig.name,
+        previous_status: prevRes.status,
+        new_status: res.status,
+        reason: res.error_message || `State transitioned to ${res.status.toUpperCase()}`,
+        timestamp: new Date().toLocaleTimeString(),
+      };
+      setIncidents((incPrev) => [incident, ...incPrev.slice(0, 49)]);
+    }
+
+    setResults((prev) => ({ ...prev, [serviceId]: res! }));
+  }, [services, results]);
 
   const triggerPollAll = useCallback(async () => {
     for (const service of services) {

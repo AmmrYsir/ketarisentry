@@ -14,6 +14,32 @@ import type { ServiceConfig, AuthUser } from '../src/types';
 
 const PORT = process.env.PORT || 3001;
 
+// Rate limiting state: IP -> timestamp attempts array
+const loginAttemptsMap = new Map<string, number[]>();
+const RATE_LIMIT_WINDOW_MS = 15 * 60 * 1000; // 15 minutes window
+const MAX_LOGIN_ATTEMPTS = 5; // Max 5 attempts per window
+
+/**
+ * In-memory sliding window rate limiter helper
+ */
+function checkRateLimit(ip: string): { allowed: boolean; remaining: number; retryAfterSec: number } {
+  const now = Date.now();
+  const attempts = loginAttemptsMap.get(ip) || [];
+
+  // Filter out attempts outside the time window
+  const validAttempts = attempts.filter((timestamp) => now - timestamp < RATE_LIMIT_WINDOW_MS);
+
+  if (validAttempts.length >= MAX_LOGIN_ATTEMPTS) {
+    const oldestInWindow = validAttempts[0];
+    const retryAfterSec = Math.ceil((oldestInWindow + RATE_LIMIT_WINDOW_MS - now) / 1000);
+    return { allowed: false, remaining: 0, retryAfterSec };
+  }
+
+  validAttempts.push(now);
+  loginAttemptsMap.set(ip, validAttempts);
+  return { allowed: true, remaining: MAX_LOGIN_ATTEMPTS - validAttempts.length, retryAfterSec: 0 };
+}
+
 console.log(`🛡️ Ketarisentry Bun + SQLite API Server booting on port ${PORT}...`);
 
 Bun.serve({
@@ -21,22 +47,29 @@ Bun.serve({
   async fetch(req) {
     const url = new URL(req.url);
 
-    // CORS headers helper
-    const corsHeaders = {
+    // Extract client IP address securely
+    const clientIp = req.headers.get('x-forwarded-for')?.split(',')[0].trim() || '127.0.0.1';
+
+    // Standard Security & Hardening Headers
+    const securityHeaders = {
       'Access-Control-Allow-Origin': '*',
       'Access-Control-Allow-Methods': 'GET, POST, PUT, DELETE, OPTIONS',
       'Access-Control-Allow-Headers': 'Content-Type, Authorization, X-Ketari-Secret',
+      'X-Content-Type-Options': 'nosniff',
+      'X-Frame-Options': 'DENY',
+      'X-XSS-Protection': '1; mode=block',
+      'Referrer-Policy': 'strict-origin-when-cross-origin',
     };
 
     if (req.method === 'OPTIONS') {
-      return new Response(null, { headers: corsHeaders });
+      return new Response(null, { headers: securityHeaders });
     }
 
     try {
       // 1. GET /api/services
       if (url.pathname === '/api/services' && req.method === 'GET') {
         const services = getAllServices();
-        return Response.json(services, { headers: corsHeaders });
+        return Response.json(services, { headers: securityHeaders });
       }
 
       // 2. POST /api/services
@@ -46,7 +79,7 @@ Bun.serve({
         if (!body || !body.service || !body.service.id || !body.service.name || !body.service.url) {
           return Response.json(
             { error: 'Invalid service payload. Mandatory fields: id, name, url.' },
-            { status: 400, headers: corsHeaders }
+            { status: 400, headers: securityHeaders }
           );
         }
 
@@ -61,14 +94,14 @@ Bun.serve({
           timestamp: new Date().toISOString(),
         });
 
-        return Response.json({ success: true, service: body.service }, { headers: corsHeaders });
+        return Response.json({ success: true, service: body.service }, { headers: securityHeaders });
       }
 
       // 3. DELETE /api/services/:id
       if (url.pathname.startsWith('/api/services/') && req.method === 'DELETE') {
         const id = url.pathname.split('/')[3];
         if (!id) {
-          return Response.json({ error: 'Service ID is required' }, { status: 400, headers: corsHeaders });
+          return Response.json({ error: 'Service ID is required' }, { status: 400, headers: securityHeaders });
         }
 
         const servicesBefore = getAllServices();
@@ -86,7 +119,7 @@ Bun.serve({
           });
         }
 
-        return Response.json({ success: true }, { headers: corsHeaders });
+        return Response.json({ success: true }, { headers: securityHeaders });
       }
 
       // 4. POST /api/poll
@@ -94,7 +127,7 @@ Bun.serve({
         const serviceConfig = (await req.json()) as ServiceConfig;
         
         if (!serviceConfig || !serviceConfig.id || !serviceConfig.url) {
-          return Response.json({ error: 'Valid service configuration required' }, { status: 400, headers: corsHeaders });
+          return Response.json({ error: 'Valid service configuration required' }, { status: 400, headers: securityHeaders });
         }
 
         const result = await executePullPoll(serviceConfig);
@@ -102,26 +135,41 @@ Bun.serve({
         // Record telemetry log into SQLite
         recordPollLog(result);
 
-        return Response.json(result, { headers: corsHeaders });
+        return Response.json(result, { headers: securityHeaders });
       }
 
       // 5. GET /api/audit-logs
       if (url.pathname === '/api/audit-logs' && req.method === 'GET') {
         const logs = getAllAuditLogs(50);
-        return Response.json(logs, { headers: corsHeaders });
+        return Response.json(logs, { headers: securityHeaders });
       }
 
-      // 6. POST /api/auth/login (Email + Password Authentication)
+      // 6. POST /api/auth/login (Email + Password Authentication with Rate Limiting)
       if (url.pathname === '/api/auth/login' && req.method === 'POST') {
+        // Enforce Rate Limit (Max 5 attempts per 15 minutes)
+        const rateLimit = checkRateLimit(clientIp);
+        if (!rateLimit.allowed) {
+          return Response.json(
+            { error: `Too many failed authentication attempts. Please try again in ${rateLimit.retryAfterSec} seconds.` },
+            { 
+              status: 429, 
+              headers: { 
+                ...securityHeaders, 
+                'Retry-After': String(rateLimit.retryAfterSec) 
+              } 
+            }
+          );
+        }
+
         const body = (await req.json()) as { email?: string; password?: string };
         
         if (!body.email || !body.password) {
-          return Response.json({ error: 'Email and password are required' }, { status: 400, headers: corsHeaders });
+          return Response.json({ error: 'Email and password are required' }, { status: 400, headers: securityHeaders });
         }
 
         const authenticatedUser = await authenticateUserWithPassword(body.email, body.password);
         if (!authenticatedUser) {
-          return Response.json({ error: 'Invalid email address or password' }, { status: 401, headers: corsHeaders });
+          return Response.json({ error: 'Invalid email address or password' }, { status: 401, headers: securityHeaders });
         }
 
         addAuditLog({
@@ -132,22 +180,37 @@ Bun.serve({
           timestamp: new Date().toISOString(),
         });
 
-        return Response.json({ success: true, user: authenticatedUser }, { headers: corsHeaders });
+        return Response.json({ success: true, user: authenticatedUser }, { headers: securityHeaders });
       }
 
-      // 7. POST /api/auth/magic-link (Magic Link Authentication for Verified Emails)
+      // 7. POST /api/auth/magic-link (Magic Link Authentication with Rate Limiting)
       if (url.pathname === '/api/auth/magic-link' && req.method === 'POST') {
+        // Enforce Rate Limit (Max 5 attempts per 15 minutes)
+        const rateLimit = checkRateLimit(clientIp);
+        if (!rateLimit.allowed) {
+          return Response.json(
+            { error: `Too many magic link requests. Please try again in ${rateLimit.retryAfterSec} seconds.` },
+            { 
+              status: 429, 
+              headers: { 
+                ...securityHeaders, 
+                'Retry-After': String(rateLimit.retryAfterSec) 
+              } 
+            }
+          );
+        }
+
         const body = (await req.json()) as { email?: string };
         
         if (!body.email) {
-          return Response.json({ error: 'Email address is required' }, { status: 400, headers: corsHeaders });
+          return Response.json({ error: 'Email address is required' }, { status: 400, headers: securityHeaders });
         }
 
         const existingUser = findUserByEmail(body.email);
         if (!existingUser || !existingUser.email_verified) {
           return Response.json(
             { error: 'No verified account found for this email address' },
-            { status: 404, headers: corsHeaders }
+            { status: 404, headers: securityHeaders }
           );
         }
 
@@ -169,7 +232,7 @@ Bun.serve({
           timestamp: new Date().toISOString(),
         });
 
-        return Response.json({ success: true, user: userPayload }, { headers: corsHeaders });
+        return Response.json({ success: true, user: userPayload }, { headers: securityHeaders });
       }
 
       // 8. POST /api/auth/sync (User Profile Sync for Sandbox/Demo Logins)
@@ -177,7 +240,7 @@ Bun.serve({
         const user = (await req.json()) as AuthUser;
         
         if (!user || !user.id || !user.email) {
-          return Response.json({ error: 'Valid user profile required' }, { status: 400, headers: corsHeaders });
+          return Response.json({ error: 'Valid user profile required' }, { status: 400, headers: securityHeaders });
         }
 
         upsertUser(user);
@@ -190,13 +253,13 @@ Bun.serve({
           timestamp: new Date().toISOString(),
         });
 
-        return Response.json({ success: true, user }, { headers: corsHeaders });
+        return Response.json({ success: true, user }, { headers: securityHeaders });
       }
 
-      return new Response('Not Found', { status: 404, headers: corsHeaders });
+      return new Response('Not Found', { status: 404, headers: securityHeaders });
     } catch (err: any) {
       console.error('API Error:', err);
-      return Response.json({ error: err.message || 'Internal Server Error' }, { status: 500, headers: corsHeaders });
+      return Response.json({ error: err.message || 'Internal Server Error' }, { status: 500, headers: securityHeaders });
     }
   },
 });

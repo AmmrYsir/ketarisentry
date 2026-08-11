@@ -21,7 +21,6 @@ import {
   Plus,
   LayoutGrid,
   List,
-  Zap,
   Globe,
   Loader2
 } from 'lucide-react';
@@ -36,7 +35,7 @@ const DashboardContent: React.FC<{
   activeTab: NavTab;
   onChangeTab: (tab: NavTab) => void;
 }> = ({ activeTab, onChangeTab }) => {
-  const { services, results, isPollingActive, triggerPollAll, openAddModal } = useHealth();
+  const { services, results, openAddModal } = useHealth();
 
   const [searchQuery, setSearchQuery] = useState('');
   const [selectedEnv, setSelectedEnv] = useState<string>('all');
@@ -395,48 +394,9 @@ const DashboardContent: React.FC<{
                 )}
               </div>
 
-              {/* Secondary Column: Telemetry Sidebar Panel (4 cols) */}
-              <div className="lg:col-span-4 space-y-6 sticky top-20">
+              {/* Secondary Column: Sticky Telemetry Sidebar Panel (4 cols) */}
+              <div className="lg:col-span-4 space-y-4 sticky top-20">
                 
-                {/* Polling Engine & System Status Card */}
-                <div className="rounded-2xl p-5 linear-card select-none space-y-4">
-                  <div className="flex items-center justify-between border-b border-slate-800/80 pb-3">
-                    <div className="flex items-center space-x-2">
-                      <Zap className="w-4 h-4 text-emerald-400" />
-                      <h3 className="text-xs font-bold text-slate-200">Pull Polling Engine</h3>
-                    </div>
-                    <span className={`text-[10px] font-mono font-bold px-2 py-0.5 rounded-full border ${
-                      isPollingActive
-                        ? 'bg-emerald-950/60 text-emerald-400 border-emerald-800/40'
-                        : 'bg-amber-950/60 text-amber-400 border-amber-800/40'
-                    }`}>
-                      {isPollingActive ? 'ACTIVE' : 'PAUSED'}
-                    </span>
-                  </div>
-
-                  <div className="space-y-2 text-xs">
-                    <div className="flex items-center justify-between text-slate-400">
-                      <span>Polling Strategy:</span>
-                      <strong className="text-slate-200 font-mono">Pure HTTP Pull</strong>
-                    </div>
-                    <div className="flex items-center justify-between text-slate-400">
-                      <span>CORS & Timeout Guard:</span>
-                      <strong className="text-emerald-400 font-mono">Enforced (5s)</strong>
-                    </div>
-                    <div className="flex items-center justify-between text-slate-400">
-                      <span>Security Headers:</span>
-                      <strong className="text-slate-200 font-mono">X-Ketari-Secret</strong>
-                    </div>
-                  </div>
-
-                  <button
-                    onClick={triggerPollAll}
-                    className="w-full py-2 rounded-xl bg-slate-800 hover:bg-slate-700 text-slate-200 text-xs font-bold transition-all border border-slate-700/60 active:scale-95 cursor-pointer"
-                  >
-                    Trigger Immediate Fleet Re-Poll
-                  </button>
-                </div>
-
                 {/* SSL Certificate Warnings Widget */}
                 {sslWarningCount > 0 && (
                   <div className="rounded-2xl p-4 bg-amber-950/40 border border-amber-800/50 text-amber-300 text-xs select-none">
@@ -450,7 +410,7 @@ const DashboardContent: React.FC<{
                   </div>
                 )}
 
-                {/* Live Incident Event Timeline Widget */}
+                {/* Primary Dedicated Incident & Health Event Log Widget */}
                 <IncidentTimeline />
               </div>
 

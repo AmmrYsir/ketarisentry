@@ -26,6 +26,8 @@ interface HeaderProps {
 export const Header: React.FC<HeaderProps> = ({ activeTab, onChangeTab, onOpenAuditLog }) => {
   const { user, isAuthenticated, logout } = useAuth();
   const { 
+    isPollingActive,
+    togglePolling,
     triggerPollAll, 
     openAddModal, 
     exportConfigJson,
@@ -132,6 +134,20 @@ export const Header: React.FC<HeaderProps> = ({ activeTab, onChangeTab, onOpenAu
 
         {/* Action Toolbar & User Profile */}
         <div className="flex items-center space-x-2">
+
+          {/* Polling Engine Live Status Indicator */}
+          <button
+            onClick={togglePolling}
+            className={`hidden lg:flex items-center space-x-2 px-2.5 py-1 rounded-lg border text-xs font-mono font-bold transition-all cursor-pointer select-none active:scale-95 ${
+              isPollingActive
+                ? 'bg-emerald-950/60 border-emerald-800/40 text-emerald-300 hover:bg-emerald-900/60'
+                : 'bg-amber-950/60 border-amber-800/40 text-amber-300 hover:bg-amber-900/60'
+            }`}
+            title={isPollingActive ? 'Pull Polling Engine is Active (Click to Pause)' : 'Pull Polling Engine is Paused (Click to Resume)'}
+          >
+            <span className={`w-2 h-2 rounded-full ${isPollingActive ? 'bg-emerald-400 glow-dot-emerald' : 'bg-amber-400'}`} />
+            <span>{isPollingActive ? 'Engine: Active (15s)' : 'Engine: Paused'}</span>
+          </button>
           
           {/* Primary Action Button (Only on Dashboard) */}
           {activeTab === 'dashboard' && user?.role !== 'viewer' && (

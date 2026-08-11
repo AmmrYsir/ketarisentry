@@ -16,23 +16,22 @@ Welcome! This document defines the engineering standards, architecture rules, de
    - Component logic must rely on derived state rather than redundant local duplication.
 
 3. **Authentication Strategy**:
-   - Google OAuth 2.0 via Google Identity Services (GIS).
-   - Must maintain a **Sandbox Demo Mode** fallback when `VITE_GOOGLE_CLIENT_ID` is missing, ensuring zero-friction local testing.
+   - Email & Password + Magic Link authentication with a **Sandbox Demo Mode** fallback for 1-click local testing.
 
-4. **Typescript Strictness & React Compiler Compatibility**:
+4. **TypeScript Strictness & React Compiler Compatibility**:
    - Maintain 100% strict TypeScript types in `src/types/index.ts`. No `any` types allowed.
    - Code must comply with React Compiler rules: avoid direct hook mutations, pure renders, and memoization-safe callbacks.
 
 ---
 
-## 🎨 UI/UX Invariants (Modern Minimalist Claymorphism)
+## 🎨 UI/UX Invariants (Linear & Vercel Sleek Dark Mode)
 
-1. **Claymorphic Visual Language**:
-   - **Soft Tactile Shadows**: Use `shadow-clay-card` (`shadow-[6px_6px_12px_rgba(0,0,0,0.08),-6px_-6px_12px_rgba(255,255,255,0.8)]` in light mode and dark clay equivalents).
-   - **Rounded Surfaces**: Use `rounded-2xl` for sub-cards and `rounded-3xl` for main panels.
-   - **High Contrast Status Indicators**: Clear color hierarchy (`Operational` green, `Degraded` amber, `Outage` rose, `Maintenance` indigo).
+1. **Sleek High-Tech Visual Language**:
+   - **Hairline Micro-Borders**: Use `border-slate-800/80` with hover transitions `hover:border-slate-700/80`.
+   - **Pulsing Live Status Dots**: Clear color hierarchy (`Operational` emerald `.glow-dot-emerald`, `Degraded` amber `.glow-dot-amber`, `Outage` rose `.glow-dot-rose`, `Maintenance` indigo `.glow-dot-indigo`).
+   - **Data Visualizations**: SVG path sparklines with smooth gradient masks under response latency curves.
    - **Micro-Interactions**: Use active scaling (`active:scale-[0.98]`) on buttons and interactive elements for tactile feedback.
-   - **Zero Heavy Gloss / Blur Chaos**: Avoid blurry semi-transparent glass overlays; prefer clean, tactile, flat clay surfaces.
+   - **Z-Index Dropdown Elevation**: Ensure dropdown menus (`CustomSelect`, user profile menu) carry dynamic elevated z-index stacking (`z-50` / `z-[100]`) over sibling card blocks.
 
 2. **Accessibility & Responsive Grid**:
    - Use semantic HTML tags (`<header>`, `<main>`, `<section>`, `<article>`, `<button>`).
@@ -46,32 +45,36 @@ Welcome! This document defines the engineering standards, architecture rules, de
 ketarisentry/
 ├── public/               # Static assets & favicons
 ├── src/
-│   ├── components/       # Reusable Claymorphic UI components
-│   │   ├── Header.tsx            # Navigation, status stats, user menu
-│   │   ├── ServiceCard.tsx       # Individual service health card
-│   │   ├── QueueInspector.tsx    # Horizon & failed jobs inspector drawer
-│   │   ├── ServiceModal.tsx      # Add/edit service endpoint modal
-│   │   ├── LoginModal.tsx        # Google OAuth & Demo sign in modal
-│   │   └── IncidentTimeline.tsx  # Chronological health event log
+│   ├── components/       # Reusable Linear/Vercel Dark UI components
+│   │   ├── Header.tsx              # Top Appbar navigation, brand emblem & user menu
+│   │   ├── ServiceCard.tsx         # Precision service health card (Grid & Table views)
+│   │   ├── QueueInspectorModal.tsx # Horizon & failed jobs inspector drawer
+│   │   ├── ServiceModal.tsx        # Add/edit target service endpoint modal
+│   │   ├── LoginPage.tsx           # Email/password & demo sign in page
+│   │   ├── IncidentTimeline.tsx    # Chronological health event log widget
+│   │   ├── UserManagement.tsx      # User directory (Create, Edit, Delete, Activate/Deactivate)
+│   │   ├── SettingsPage.tsx        # Global telemetry, SMTP email dispatcher & test verification
+│   │   ├── AuditLogModal.tsx       # SQLite security & action audit logs drawer
+│   │   └── CustomSelect.tsx        # High-z-index elevated dropdown select component
 │   ├── context/          # Global application state
-│   │   ├── AuthContext.tsx       # Google OAuth & session management
-│   │   └── HealthContext.tsx     # Fleet services & polling state engine
+│   │   ├── AuthContext.tsx         # Session & user auth state
+│   │   └── HealthContext.tsx       # Fleet services & polling state engine
 │   ├── services/         # API & polling engine logic
-│   │   └── pollingEngine.ts      # HTTP prober & mock data simulator
+│   │   └── pollingEngine.ts        # HTTP prober & mock data simulator
 │   ├── types/            # TypeScript interfaces & enums
-│   │   └── index.ts              # Core schemas (Service, Health, Queue, Auth)
-│   ├── App.tsx           # Main application view container
-│   ├── index.css         # Claymorphism CSS tokens & utility styles
+│   │   └── index.ts                # Core schemas (Service, Health, Queue, Auth, NavTab)
+│   ├── App.tsx           # Main application view container (2-Column Command Layout)
+│   ├── index.css         # Linear/Vercel dark CSS tokens & utility styles
 │   └── main.tsx          # App entry point
 ├── AGENTS.md             # Developer & AI Agent instructions (This file)
 ├── DESIGN.md             # UI/UX Design System Specification
-├── README.md             # Project documentation & Laravel setup guide
+├── README.md             # Project documentation & setup guide
 └── package.json          # Bun dependencies & build scripts
 ```
 
 ---
 
-## 🔧 AI Agent Tooling & Commands
+## 🔧 AI Agent Tooling & Verification Commands
 
 Before declaring any task completed:
 - Run `bun run lint` (oxlint check).

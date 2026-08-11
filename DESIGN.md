@@ -14,6 +14,24 @@ Ketarisentry utilizes an ultra-refined, high-precision dark aesthetic engineered
 3. **Vibrant Status Glow Indicators**: Pulsing live dots with glowing aura shadows (`Operational` emerald `#10b981`, `Degraded` amber `#f59e0b`, `Outage` rose `#f43f5e`, `Maintenance` indigo `#6366f1`).
 4. **Data Visualizations**: SVG path sparklines with smooth gradient masks under response latency curves.
 5. **Tactile Micro-Interactions**: Tactile button press feedback (`active:scale-[0.98]`), hover ambient glows, and clean backdrop blur drawers.
+6. **Elevated Stacking Context**: Explicit descending z-index stacking (`z-50` dropdown menus over `z-40`-`z-0` card blocks) ensuring dropdown popups always render cleanly above sibling cards.
+
+---
+
+## 📐 Layout Architecture & Module Structure
+
+### 1. Navigation Menu Header (`src/components/Header.tsx`)
+- Sleek top appbar (`h-14`) with brand shield, navigation tabs (`Dashboard`, `Users`, `Settings`), unified utility icon toolbar, and user profile menu.
+
+### 2. 2-Column Command Dashboard Layout (`src/App.tsx`)
+- **Primary Column (8 Cols)**: Monitored fleet endpoints grouped logically by Environment (`Production`, `Staging`, `Local / Dev`) with view mode toggle (`Grid Card View` vs `Compact Table View`).
+- **Sticky Telemetry Sidebar (4 Cols)**: Live Pull Polling Engine status, SSL Certificate alerts, and continuous Incident Event Feed (`IncidentTimeline.tsx`).
+
+### 3. User Access Control Directory (`src/components/UserManagement.tsx`)
+- Directory table with Role hierarchy badges (`Superadmin`, `Admin`, `Operator`, `Viewer`), Account Activation/Deactivation toggles, Create/Edit modals, and search filters.
+
+### 4. System Settings & SMTP Dispatcher (`src/components/SettingsPage.tsx`)
+- Global polling parameters, security keys, SMTP email alert dispatcher with `[ Send Test Email ]` verification button, alert sensitivity rules, and database retention.
 
 ---
 
@@ -44,7 +62,7 @@ Ketarisentry utilizes an ultra-refined, high-precision dark aesthetic engineered
 .linear-card {
   background-color: #090d16;
   border: 1px solid rgba(255, 255, 255, 0.08);
-  border-radius: 1rem; /* rounded-2xl */
+  border-radius: 0.75rem; /* rounded-xl */
   transition: border-color 0.2s ease, transform 0.2s ease, box-shadow 0.2s ease;
 }
 
@@ -56,7 +74,7 @@ Ketarisentry utilizes an ultra-refined, high-precision dark aesthetic engineered
 .linear-btn {
   background-color: #0f172a;
   border: 1px solid rgba(255, 255, 255, 0.1);
-  border-radius: 0.75rem; /* rounded-xl */
+  border-radius: 0.5rem; /* rounded-lg */
   transition: all 0.15s ease;
 }
 
@@ -64,4 +82,3 @@ Ketarisentry utilizes an ultra-refined, high-precision dark aesthetic engineered
   transform: scale(0.98);
 }
 ```
-

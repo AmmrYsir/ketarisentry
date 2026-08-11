@@ -1,162 +1,244 @@
 import React, { useState } from 'react';
-import { X, Layers, AlertOctagon, CheckCircle2, ChevronDown, ChevronRight, Copy, Check } from 'lucide-react';
+import { 
+  X, 
+  Layers, 
+  AlertOctagon, 
+  Copy, 
+  Check, 
+  RefreshCw, 
+  ChevronDown, 
+  ChevronRight,
+  Terminal,
+  Activity,
+  ShieldCheck
+} from 'lucide-react';
 import { useHealth } from '../hooks/useHealth';
 import type { FailedJobTrace } from '../types';
 
 export const QueueInspectorModal: React.FC = () => {
-  const { selectedServiceForInspector, closeQueueInspector } = useHealth();
-  const [expandedTraceId, setExpandedTraceId] = useState<string | null>(null);
+  const { selectedServiceForInspector, closeQueueInspector, triggerPollSingle } = useHealth();
+  
   const [copiedId, setCopiedId] = useState<string | null>(null);
+  const [expandedJobId, setExpandedJobId] = useState<string | null>(null);
+  const [filterQueue, setFilterQueue] = useState<string>('all');
 
   if (!selectedServiceForInspector) return null;
 
   const { config, lastResult } = selectedServiceForInspector;
   const queue = lastResult?.queue;
-  const failedJobs = queue?.recent_failed_jobs || [];
+  const failedJobs: FailedJobTrace[] = queue?.recent_failed_jobs || [];
 
-  const handleCopyTrace = (trace: string, id: string) => {
+  const handleCopyTrace = (jobId: string, trace: string) => {
     navigator.clipboard.writeText(trace);
-    setCopiedId(id);
+    setCopiedId(jobId);
     setTimeout(() => setCopiedId(null), 2000);
   };
 
+  const filteredFailedJobs = failedJobs.filter((j: FailedJobTrace) => {
+    if (filterQueue === 'all') return true;
+    return j.queue === filterQueue;
+  });
+
+  const uniqueQueues = Array.from(new Set(failedJobs.map((j: FailedJobTrace) => j.queue)));
+
   return (
-    <div className="fixed inset-0 z-50 bg-slate-950/80 backdrop-blur-sm flex items-center justify-center p-4 sm:p-6 overflow-y-auto animate-in fade-in duration-200">
-      <div className="w-full max-w-3xl bg-slate-900 border border-slate-800 rounded-3xl p-6 shadow-[8px_8px_24px_rgba(0,0,0,0.6)] relative my-8">
+    <div className="fixed inset-0 z-50 bg-slate-950/80 backdrop-blur-sm flex justify-end animate-in fade-in duration-200">
+      <div className="w-full max-w-2xl bg-[#090d16] border-l border-slate-800/80 h-full flex flex-col shadow-2xl overflow-hidden">
         
-        {/* Header */}
-        <div className="flex items-start justify-between border-b border-slate-800/80 pb-4 mb-5 select-none">
+        {/* Drawer Header */}
+        <div className="p-5 border-b border-slate-800/80 flex items-center justify-between select-none bg-slate-950/60">
           <div className="flex items-center space-x-3">
-            <div className="w-10 h-10 rounded-2xl bg-amber-950/80 border border-amber-800/60 flex items-center justify-center text-amber-400">
+            <div className="w-10 h-10 rounded-xl bg-amber-950/60 border border-amber-800/40 flex items-center justify-center text-amber-400">
               <Layers className="w-5 h-5" />
             </div>
             <div>
-              <h2 className="text-lg font-bold text-slate-100">{config.name} Queue & Horizon Inspector</h2>
-              <p className="text-xs text-slate-400">Redis Connection Queues & Failed Job Telemetry</p>
+              <div className="flex items-center space-x-2">
+                <h2 className="text-base font-extrabold text-slate-100">{config.name}</h2>
+                <span className="text-[10px] font-mono font-bold px-2 py-0.5 rounded-full bg-slate-800 text-slate-300 border border-slate-700/60 uppercase">
+                  Queue Telemetry
+                </span>
+              </div>
+              <p className="text-xs text-slate-400 font-mono">{config.url}</p>
             </div>
           </div>
 
-          <button
-            onClick={closeQueueInspector}
-            className="p-2 rounded-xl bg-slate-800 text-slate-400 hover:text-white hover:bg-slate-700 active:scale-95 transition-all cursor-pointer"
-            aria-label="Close Inspector"
-          >
-            <X className="w-5 h-5" />
-          </button>
-        </div>
-
-        {/* Horizon Summary Stats */}
-        <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 mb-6 select-none">
-          {/* Horizon Status */}
-          <div className="p-4 rounded-2xl bg-slate-950/60 border border-slate-800/60 shadow-[inset_2px_2px_4px_rgba(0,0,0,0.4)]">
-            <span className="text-xs text-slate-400 font-semibold block mb-1">Laravel Horizon</span>
-            <div className="flex items-center space-x-2">
-              <CheckCircle2 className="w-4 h-4 text-emerald-400" />
-              <span className="text-sm font-bold text-emerald-400">Workers Active</span>
-            </div>
-          </div>
-
-          {/* Pending Queue Count */}
-          <div className="p-4 rounded-2xl bg-slate-950/60 border border-slate-800/60 shadow-[inset_2px_2px_4px_rgba(0,0,0,0.4)]">
-            <span className="text-xs text-slate-400 font-semibold block mb-1">Pending Jobs</span>
-            <span className="text-lg font-mono font-bold text-slate-100">
-              {queue?.pending_jobs || 0}
-            </span>
-          </div>
-
-          {/* Failed Jobs Count */}
-          <div className="p-4 rounded-2xl bg-slate-950/60 border border-slate-800/60 shadow-[inset_2px_2px_4px_rgba(0,0,0,0.4)]">
-            <span className="text-xs text-slate-400 font-semibold block mb-1">Failed Jobs (24h)</span>
-            <span className={`text-lg font-mono font-bold ${(queue?.failed_jobs_24h || 0) > 0 ? 'text-rose-400' : 'text-emerald-400'}`}>
-              {queue?.failed_jobs_24h || 0}
-            </span>
+          <div className="flex items-center space-x-2">
+            <button
+              onClick={() => triggerPollSingle(config.id)}
+              className="p-2 rounded-xl linear-btn text-slate-300 hover:text-white cursor-pointer"
+              title="Refresh Queue Telemetry"
+              aria-label="Refresh Telemetry"
+            >
+              <RefreshCw className="w-4 h-4" />
+            </button>
+            <button
+              onClick={closeQueueInspector}
+              className="p-2 rounded-xl linear-btn text-slate-400 hover:text-white cursor-pointer"
+              aria-label="Close Inspector Drawer"
+            >
+              <X className="w-5 h-5" />
+            </button>
           </div>
         </div>
 
-        {/* Queues Breakdown */}
-        {queue?.queues && Object.keys(queue.queues).length > 0 && (
-          <div className="mb-6 select-none">
-            <h3 className="text-xs font-bold uppercase tracking-wider text-slate-400 mb-3">Active Queue Connections</h3>
-            <div className="grid grid-cols-2 sm:grid-cols-4 gap-2">
-              {Object.entries(queue.queues).map(([qName, count]) => (
-                <div key={qName} className="p-3 rounded-xl bg-slate-950/40 border border-slate-800/50 flex items-center justify-between">
-                  <span className="text-xs font-mono text-slate-300 font-semibold">{qName}</span>
-                  <span className="text-xs font-mono font-bold text-indigo-400">{count}</span>
-                </div>
-              ))}
+        {/* Telemetry Stats Grid */}
+        <div className="p-5 overflow-y-auto space-y-6 flex-1">
+          
+          {/* Horizon Worker Status Card */}
+          <div className="p-4 rounded-xl linear-card select-none">
+            <div className="flex items-center justify-between mb-3">
+              <div className="flex items-center space-x-2">
+                <Activity className="w-4 h-4 text-emerald-400" />
+                <h3 className="text-xs font-bold text-slate-200">Laravel Horizon & Supervisor Status</h3>
+              </div>
+              <span className={`text-[10px] font-mono font-bold px-2.5 py-0.5 rounded-full border ${
+                queue?.horizon_active
+                  ? 'bg-emerald-950/60 text-emerald-400 border-emerald-800/40'
+                  : 'bg-amber-950/60 text-amber-400 border-amber-800/40'
+              }`}>
+                {queue?.horizon_active ? 'RUNNING' : 'INACTIVE'}
+              </span>
+            </div>
+
+            <div className="grid grid-cols-3 gap-3 text-center">
+              <div className="p-2.5 rounded-xl linear-well">
+                <span className="text-[11px] text-slate-400 font-semibold block">Workers</span>
+                <span className="text-sm font-mono font-bold text-slate-100">{queue?.horizon_active ? 'Active' : 'Standby'}</span>
+              </div>
+              <div className="p-2.5 rounded-xl linear-well">
+                <span className="text-[11px] text-slate-400 font-semibold block">Pending Jobs</span>
+                <span className="text-sm font-mono font-bold text-amber-300">{queue?.pending_jobs || 0}</span>
+              </div>
+              <div className="p-2.5 rounded-xl linear-well">
+                <span className="text-[11px] text-slate-400 font-semibold block">Failed (24h)</span>
+                <span className={`text-sm font-mono font-bold ${(queue?.failed_jobs_24h || 0) > 0 ? 'text-rose-400' : 'text-slate-200'}`}>
+                  {queue?.failed_jobs_24h || 0}
+                </span>
+              </div>
             </div>
           </div>
-        )}
 
-        {/* Failed Job Traces Section */}
-        <div>
-          <h3 className="text-xs font-bold uppercase tracking-wider text-slate-400 mb-3 flex items-center justify-between select-none">
-            <span>Recent Failed Job Exception Traces ({failedJobs.length})</span>
-            {failedJobs.length > 0 && <span className="text-rose-400 text-[10px] lowercase font-normal">click to expand stack trace</span>}
-          </h3>
-
-          {failedJobs.length === 0 ? (
-            <div className="p-8 text-center bg-slate-950/40 rounded-2xl border border-slate-800/50 select-none">
-              <CheckCircle2 className="w-8 h-8 text-emerald-400 mx-auto mb-2" />
-              <p className="text-sm font-semibold text-slate-200">No Failed Jobs Recorded!</p>
-              <p className="text-xs text-slate-400 mt-1">Laravel Horizon workers are processing all queue connections cleanly.</p>
-            </div>
-          ) : (
-            <div className="space-y-3 max-h-80 overflow-y-auto pr-1">
-              {failedJobs.map((job: FailedJobTrace) => {
-                const isExpanded = expandedTraceId === job.id;
-                return (
-                  <div
-                    key={job.id}
-                    className="bg-slate-950/80 border border-slate-800 rounded-2xl p-4 hover:border-slate-700 transition-colors"
-                  >
-                    <div
-                      className="flex items-start justify-between cursor-pointer select-none"
-                      onClick={() => setExpandedTraceId(isExpanded ? null : job.id)}
-                    >
-                      <div className="flex items-start space-x-3">
-                        <AlertOctagon className="w-5 h-5 text-rose-400 mt-0.5 flex-shrink-0" />
-                        <div>
-                          <div className="flex items-center space-x-2">
-                            <span className="text-xs font-bold font-mono text-slate-200">{job.job_name}</span>
-                            <span className="text-[10px] font-mono px-2 py-0.5 rounded bg-slate-800 text-amber-300">
-                              queue: {job.queue}
-                            </span>
-                          </div>
-                          <p className="text-xs text-rose-300 mt-1 font-semibold">{job.exception_class}</p>
-                          <p className="text-xs text-slate-300 mt-0.5 line-clamp-1">{job.message}</p>
-                        </div>
-                      </div>
-
-                      <div className="flex items-center space-x-2 text-slate-400">
-                        <span className="text-[11px] font-mono">{job.failed_at}</span>
-                        {isExpanded ? <ChevronDown className="w-4 h-4" /> : <ChevronRight className="w-4 h-4" />}
-                      </div>
-                    </div>
-
-                    {/* Expanded Stack Trace */}
-                    {isExpanded && (
-                      <div className="mt-4 pt-3 border-t border-slate-800/80">
-                        <div className="flex items-center justify-between mb-2 select-none">
-                          <span className="text-[11px] font-semibold text-slate-400 uppercase tracking-wider">Full Exception Trace</span>
-                          <button
-                            onClick={() => handleCopyTrace(job.trace, job.id)}
-                            className="flex items-center space-x-1 text-xs text-indigo-400 hover:text-indigo-300 transition-colors cursor-pointer"
-                          >
-                            {copiedId === job.id ? <Check className="w-3.5 h-3.5" /> : <Copy className="w-3.5 h-3.5" />}
-                            <span>{copiedId === job.id ? 'Copied!' : 'Copy Trace'}</span>
-                          </button>
-                        </div>
-                        <pre className="p-3 bg-slate-900 rounded-xl text-[11px] font-mono text-slate-300 overflow-x-auto border border-slate-800 leading-relaxed whitespace-pre-wrap max-h-48">
-                          {job.trace}
-                        </pre>
-                      </div>
-                    )}
+          {/* Active Queues Breakdown */}
+          {queue?.queues && Object.keys(queue.queues).length > 0 && (
+            <div className="select-none">
+              <h3 className="text-xs font-bold text-slate-300 mb-2.5">Active Queue Connections</h3>
+              <div className="grid grid-cols-2 sm:grid-cols-4 gap-2">
+                {Object.entries(queue.queues).map(([qName, count]) => (
+                  <div key={qName} className="p-2.5 rounded-xl linear-well flex items-center justify-between">
+                    <span className="text-xs font-mono font-semibold text-slate-300">{qName}</span>
+                    <span className="text-xs font-mono font-bold text-indigo-400">{count}</span>
                   </div>
-                );
-              })}
+                ))}
+              </div>
             </div>
           )}
+
+          {/* Failed Jobs List */}
+          <div>
+            <div className="flex items-center justify-between mb-3 select-none">
+              <div className="flex items-center space-x-2">
+                <AlertOctagon className="w-4 h-4 text-rose-400" />
+                <h3 className="text-xs font-bold text-slate-200">Failed Job Exceptions</h3>
+                <span className="text-xs font-mono font-bold text-rose-400 bg-rose-950/60 px-2 py-0.5 rounded-full border border-rose-800/40">
+                  {failedJobs.length}
+                </span>
+              </div>
+
+              {/* Queue Filter */}
+              {uniqueQueues.length > 1 && (
+                <div className="flex items-center space-x-1.5 text-xs text-slate-400">
+                  <span>Queue:</span>
+                  <select
+                    value={filterQueue}
+                    onChange={(e) => setFilterQueue(e.target.value)}
+                    className="bg-slate-950 border border-slate-800 rounded-lg px-2 py-1 text-xs text-slate-200 focus:outline-none"
+                  >
+                    <option value="all">All Queues</option>
+                    {uniqueQueues.map((q) => (
+                      <option key={q} value={q}>{q}</option>
+                    ))}
+                  </select>
+                </div>
+              )}
+            </div>
+
+            {filteredFailedJobs.length === 0 ? (
+              <div className="p-8 text-center linear-card select-none">
+                <ShieldCheck className="w-8 h-8 text-emerald-400 mx-auto mb-2 opacity-80" />
+                <p className="text-xs font-bold text-slate-200">Zero Failed Jobs</p>
+                <p className="text-[11px] text-slate-400 mt-1">All queue workers are executing jobs cleanly without exceptions.</p>
+              </div>
+            ) : (
+              <div className="space-y-3">
+                {filteredFailedJobs.map((job: FailedJobTrace) => {
+                  const isExpanded = expandedJobId === job.id;
+                  return (
+                    <div key={job.id} className="rounded-xl linear-card overflow-hidden">
+                      {/* Job Header */}
+                      <div
+                        onClick={() => setExpandedJobId(isExpanded ? null : job.id)}
+                        className="p-3.5 flex items-center justify-between cursor-pointer hover:bg-slate-800/30 transition-colors select-none"
+                      >
+                        <div className="flex items-center space-x-3 truncate">
+                          <button className="text-slate-400">
+                            {isExpanded ? <ChevronDown className="w-4 h-4 text-emerald-400" /> : <ChevronRight className="w-4 h-4" />}
+                          </button>
+                          <div className="truncate">
+                            <div className="flex items-center space-x-2">
+                              <span className="text-xs font-bold text-rose-300 font-mono truncate">{job.exception_class}</span>
+                              <span className="text-[10px] font-mono px-2 py-0.5 rounded bg-slate-800 text-slate-300 border border-slate-700/50">
+                                {job.queue}
+                              </span>
+                            </div>
+                            <p className="text-xs text-slate-300 truncate mt-0.5 font-medium">{job.message}</p>
+                          </div>
+                        </div>
+
+                        <span className="text-[11px] font-mono text-slate-400 shrink-0 ml-3">
+                          {new Date(job.failed_at).toLocaleTimeString()}
+                        </span>
+                      </div>
+
+                      {/* Expandable Trace Viewport */}
+                      {isExpanded && (
+                        <div className="p-4 border-t border-slate-800/80 bg-slate-950/90 space-y-3">
+                          <div className="flex items-center justify-between">
+                            <span className="text-[11px] font-mono text-slate-400 flex items-center space-x-1.5">
+                              <Terminal className="w-3.5 h-3.5 text-indigo-400" />
+                              <span>Job: {job.job_name} &bull; ID: {job.id}</span>
+                            </span>
+                            <button
+                              onClick={() => handleCopyTrace(job.id, job.trace)}
+                              className="px-2.5 py-1 rounded-lg bg-slate-800 hover:bg-slate-700 text-slate-200 text-xs font-semibold flex items-center space-x-1 transition-all cursor-pointer border border-slate-700/60"
+                            >
+                              {copiedId === job.id ? <Check className="w-3.5 h-3.5 text-emerald-400" /> : <Copy className="w-3.5 h-3.5" />}
+                              <span>{copiedId === job.id ? 'Copied' : 'Copy Trace'}</span>
+                            </button>
+                          </div>
+
+                          {/* Exception Trace Code Block */}
+                          <pre className="p-3 rounded-xl bg-[#030712] border border-slate-800 text-[11px] font-mono text-slate-300 overflow-x-auto max-h-56 leading-relaxed select-text">
+                            {job.trace}
+                          </pre>
+                        </div>
+                      )}
+                    </div>
+                  );
+                })}
+              </div>
+            )}
+          </div>
+        </div>
+
+        {/* Drawer Footer */}
+        <div className="p-4 border-t border-slate-800/80 select-none bg-slate-950/60 flex items-center justify-between text-xs text-slate-400 font-mono">
+          <span>Target: {config.name}</span>
+          <button
+            onClick={closeQueueInspector}
+            className="px-4 py-2 rounded-xl linear-btn text-slate-200 font-semibold cursor-pointer"
+          >
+            Close Inspector
+          </button>
         </div>
       </div>
     </div>

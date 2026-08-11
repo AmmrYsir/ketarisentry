@@ -69,7 +69,7 @@ const DashboardContent: React.FC = () => {
   });
 
   return (
-    <div className="min-h-screen bg-[#0b0f19] text-slate-100 flex flex-col selection:bg-emerald-500 selection:text-slate-900 font-sans">
+    <div className="min-h-screen bg-[#030712] text-slate-100 flex flex-col selection:bg-emerald-500 selection:text-slate-900 font-sans">
       <Header onOpenAuditLog={() => setIsAuditModalOpen(true)} />
 
       <main className="flex-1 max-w-7xl w-full mx-auto px-4 sm:px-6 lg:px-8 py-8 space-y-8">
@@ -77,9 +77,9 @@ const DashboardContent: React.FC = () => {
         {/* Fleet Metrics Summary Banner */}
         <section className="grid grid-cols-2 lg:grid-cols-5 gap-4 select-none">
           {/* Total Monitored Services */}
-          <div className="rounded-3xl p-5 bg-slate-900/90 border border-slate-800/80 shadow-[6px_6px_16px_rgba(0,0,0,0.4)] hover:-translate-y-1 transition-all">
+          <div className="rounded-2xl p-5 linear-card">
             <div className="flex items-center space-x-3.5">
-              <div className="w-10 h-10 rounded-2xl bg-indigo-950/80 border border-indigo-800/60 flex items-center justify-center text-indigo-400">
+              <div className="w-10 h-10 rounded-xl bg-indigo-950/60 border border-indigo-800/40 flex items-center justify-center text-indigo-400">
                 <Server className="w-5 h-5" />
               </div>
               <div>
@@ -90,9 +90,9 @@ const DashboardContent: React.FC = () => {
           </div>
 
           {/* Average Latency */}
-          <div className="rounded-3xl p-5 bg-slate-900/90 border border-slate-800/80 shadow-[6px_6px_16px_rgba(0,0,0,0.4)] hover:-translate-y-1 transition-all">
+          <div className="rounded-2xl p-5 linear-card">
             <div className="flex items-center space-x-3.5">
-              <div className="w-10 h-10 rounded-2xl bg-emerald-950/80 border border-emerald-800/60 flex items-center justify-center text-emerald-400">
+              <div className="w-10 h-10 rounded-xl bg-emerald-950/60 border border-emerald-800/40 flex items-center justify-center text-emerald-400">
                 <Activity className="w-5 h-5" />
               </div>
               <div>
@@ -103,9 +103,9 @@ const DashboardContent: React.FC = () => {
           </div>
 
           {/* Total Pending Queue Jobs */}
-          <div className="rounded-3xl p-5 bg-slate-900/90 border border-slate-800/80 shadow-[6px_6px_16px_rgba(0,0,0,0.4)] hover:-translate-y-1 transition-all">
+          <div className="rounded-2xl p-5 linear-card">
             <div className="flex items-center space-x-3.5">
-              <div className="w-10 h-10 rounded-2xl bg-amber-950/80 border border-amber-800/60 flex items-center justify-center text-amber-400">
+              <div className="w-10 h-10 rounded-xl bg-amber-950/60 border border-amber-800/40 flex items-center justify-center text-amber-400">
                 <Layers className="w-5 h-5" />
               </div>
               <div>
@@ -116,9 +116,9 @@ const DashboardContent: React.FC = () => {
           </div>
 
           {/* Failed Jobs (24h) */}
-          <div className="rounded-3xl p-5 bg-slate-900/90 border border-slate-800/80 shadow-[6px_6px_16px_rgba(0,0,0,0.4)] hover:-translate-y-1 transition-all">
+          <div className="rounded-2xl p-5 linear-card">
             <div className="flex items-center space-x-3.5">
-              <div className="w-10 h-10 rounded-2xl bg-rose-950/80 border border-rose-800/60 flex items-center justify-center text-rose-400">
+              <div className="w-10 h-10 rounded-xl bg-rose-950/60 border border-rose-800/40 flex items-center justify-center text-rose-400">
                 <AlertOctagon className="w-5 h-5" />
               </div>
               <div>
@@ -131,9 +131,9 @@ const DashboardContent: React.FC = () => {
           </div>
 
           {/* SSL Expiry Warnings */}
-          <div className="col-span-2 lg:col-span-1 rounded-3xl p-5 bg-slate-900/90 border border-slate-800/80 shadow-[6px_6px_16px_rgba(0,0,0,0.4)] hover:-translate-y-1 transition-all">
+          <div className="col-span-2 lg:col-span-1 rounded-2xl p-5 linear-card">
             <div className="flex items-center space-x-3.5">
-              <div className="w-10 h-10 rounded-2xl bg-emerald-950/80 border border-emerald-800/60 flex items-center justify-center text-emerald-400">
+              <div className="w-10 h-10 rounded-xl bg-emerald-950/60 border border-emerald-800/40 flex items-center justify-center text-emerald-400">
                 <Lock className="w-5 h-5" />
               </div>
               <div>
@@ -147,25 +147,28 @@ const DashboardContent: React.FC = () => {
         </section>
 
         {/* Search & Filter Controls Toolbar */}
-        <div className="bg-slate-900/90 rounded-3xl p-4 border border-slate-800/80 shadow-[6px_6px_16px_rgba(0,0,0,0.4)]">
+        <div className="rounded-2xl p-3.5 linear-card">
           <div className="flex flex-wrap items-center justify-between gap-3">
             {/* Search Input */}
-            <div className="relative flex-1 min-w-[260px]">
+            <div className="relative flex-1 min-w-[280px]">
               <Search className="w-4 h-4 text-slate-400 absolute left-3.5 top-1/2 -translate-y-1/2 pointer-events-none" />
               <input
                 type="text"
                 value={searchQuery}
                 onChange={(e) => setSearchQuery(e.target.value)}
                 placeholder="Search services by name or endpoint URL..."
-                className="w-full pl-10 pr-4 py-2.5 rounded-2xl bg-slate-950 border border-slate-800 text-xs text-slate-100 placeholder-slate-500 focus:outline-none focus:border-emerald-500 transition-all shadow-[inset_2px_2px_4px_rgba(0,0,0,0.4)]"
+                className="w-full pl-10 pr-12 py-2 rounded-xl bg-slate-950/80 border border-slate-800 text-xs text-slate-100 placeholder-slate-500 focus:outline-none focus:border-emerald-500 transition-all font-sans"
               />
+              <span className="absolute right-3 top-1/2 -translate-y-1/2 text-[10px] font-mono font-bold text-slate-400 px-1.5 py-0.5 rounded bg-slate-900 border border-slate-800 pointer-events-none">
+                ⌘K
+              </span>
             </div>
 
             {/* Environment & Status Filter Dropdowns */}
             <div className="flex items-center space-x-2.5 select-none">
               <CustomSelect
                 value={selectedEnv}
-                onChange={(val) => setSelectedEnv(val)}
+                onChange={(val) => setSelectedEnv(String(val))}
                 options={[
                   { value: 'all', label: 'Env: All' },
                   { value: 'production', label: 'Production' },
@@ -177,7 +180,7 @@ const DashboardContent: React.FC = () => {
 
               <CustomSelect
                 value={selectedStatus}
-                onChange={(val) => setSelectedStatus(val)}
+                onChange={(val) => setSelectedStatus(String(val))}
                 options={[
                   { value: 'all', label: 'Status: All' },
                   { value: 'operational', label: 'Operational' },
@@ -194,16 +197,16 @@ const DashboardContent: React.FC = () => {
         {/* Services Grid */}
         <section>
           {filteredServices.length === 0 ? (
-            <div className="bg-slate-900/90 rounded-3xl p-12 border border-slate-800/80 shadow-[6px_6px_16px_rgba(0,0,0,0.4)] text-center select-none">
+            <div className="rounded-2xl p-12 linear-card text-center select-none">
               <Server className="w-12 h-12 text-slate-500 mx-auto mb-3 opacity-60" />
               <h3 className="text-base font-extrabold text-slate-200">No Services Monitored</h3>
-              <p className="text-xs text-slate-400 mt-1 max-w-sm mx-auto">
+              <p className="text-xs text-slate-400 mt-1 max-w-sm mx-auto font-medium">
                 Your monitoring fleet is empty. Add your first Laravel /ketari/health endpoint to start tracking service status.
               </p>
-              <div className="mt-4 flex justify-center">
+              <div className="mt-5 flex justify-center">
                 <button
                   onClick={() => openAddModal()}
-                  className="flex items-center space-x-1.5 px-4 py-2.5 rounded-xl bg-emerald-600 hover:bg-emerald-500 text-white font-bold text-xs shadow-[3px_3px_8px_rgba(16,185,129,0.3)] active:scale-95 cursor-pointer transition-all"
+                  className="flex items-center space-x-2 px-4 py-2 rounded-xl bg-emerald-600 hover:bg-emerald-500 text-white font-bold text-xs shadow-[0_0_12px_rgba(16,185,129,0.25)] active:scale-95 cursor-pointer transition-all border border-emerald-500/50"
                   aria-label="Add Target Service Endpoint"
                 >
                   <Plus className="w-4 h-4" />
@@ -243,6 +246,7 @@ const DashboardContent: React.FC = () => {
   );
 };
 
+
 const MainContent: React.FC = () => {
   const { isAuthenticated } = useAuth();
 
@@ -264,3 +268,4 @@ export default function App() {
     </AuthProvider>
   );
 }
+

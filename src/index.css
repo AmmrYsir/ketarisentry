@@ -2,9 +2,9 @@
 
 @layer base {
   body {
-    background-color: #0b0f19;
-    color: #f1f5f9;
-    font-family: system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, sans-serif;
+    background-color: #030712;
+    color: #f3f4f6;
+    font-family: Inter, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, sans-serif;
     -webkit-font-smoothing: antialiased;
   }
 
@@ -14,37 +14,68 @@
   }
 }
 
-/* Claymorphic Soft Tactile Custom Classes */
-.shadow-clay-card {
-  box-shadow: 
-    6px 6px 16px rgba(0, 0, 0, 0.4),
-    -4px -4px 12px rgba(255, 255, 255, 0.03);
+/* Linear & Vercel High-Tech Sleek Dark Surfaces */
+.linear-card {
+  background-color: rgba(15, 23, 42, 0.65);
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  backdrop-filter: blur(12px);
+  transition: border-color 0.2s ease, transform 0.2s cubic-bezier(0.16, 1, 0.3, 1), box-shadow 0.2s ease;
 }
 
-.shadow-clay-btn {
-  box-shadow: 
-    4px 4px 10px rgba(0, 0, 0, 0.3),
-    -3px -3px 8px rgba(255, 255, 255, 0.04);
+.linear-card:hover {
+  border-color: rgba(255, 255, 255, 0.18);
+  box-shadow: 0 10px 30px -10px rgba(0, 0, 0, 0.5);
 }
 
-.shadow-clay-inset {
-  box-shadow: 
-    inset 3px 3px 6px rgba(0, 0, 0, 0.5),
-    inset -3px -3px 6px rgba(255, 255, 255, 0.02);
+.linear-btn {
+  background-color: rgba(30, 41, 59, 0.6);
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  transition: all 0.15s ease;
 }
 
-/* Custom Tactile Scrollbar */
+.linear-btn:hover {
+  background-color: rgba(51, 65, 85, 0.8);
+  border-color: rgba(255, 255, 255, 0.18);
+}
+
+.linear-btn:active {
+  transform: scale(0.98);
+}
+
+.linear-well {
+  background-color: rgba(3, 7, 18, 0.7);
+  border: 1px solid rgba(255, 255, 255, 0.06);
+}
+
+/* Glowing Status Aura Dots */
+.glow-dot-emerald {
+  box-shadow: 0 0 10px rgba(16, 185, 129, 0.7);
+}
+
+.glow-dot-amber {
+  box-shadow: 0 0 10px rgba(245, 158, 11, 0.7);
+}
+
+.glow-dot-rose {
+  box-shadow: 0 0 10px rgba(244, 63, 94, 0.7);
+}
+
+.glow-dot-indigo {
+  box-shadow: 0 0 10px rgba(99, 102, 241, 0.7);
+}
+
+/* Custom Sleek Scrollbar */
 ::-webkit-scrollbar {
-  width: 6px;
-  height: 6px;
+  width: 5px;
+  height: 5px;
 }
 ::-webkit-scrollbar-track {
-  background: #0f172a;
+  background: #030712;
 }
 ::-webkit-scrollbar-thumb {
-  background: #334155;
+  background: #1e293b;
   border-radius: 9999px;
 }
 ::-webkit-scrollbar-thumb:hover {
-  background: #475569;
+  background: #334155;
 }

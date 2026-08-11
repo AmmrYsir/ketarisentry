@@ -1,120 +1,67 @@
 # Ketarisentry Design System Spec (DESIGN.md)
 
-This document specifies the **Minimalist Modern Claymorphism** design system used throughout **Ketarisentry**.
+This document specifies the **Linear & Vercel-inspired Sleek High-Tech Dark Mode** design system used throughout **Ketarisentry**.
 
 ---
 
-## 🎨 Visual Philosophy: Modern Claymorphism
+## 🎨 Visual Philosophy: Sleek High-Tech Dark Mode
 
-Ketarisentry utilizes a modern, clean, tactile **Claymorphism** design aesthetic. Unlike heavy glassy blurs or flat 2D designs, Claymorphism provides soft, rounded, 3D-like tactile surfaces using dual drop-shadows (light top-left highlights + soft bottom-right shadow) combined with high-contrast typography.
+Ketarisentry utilizes an ultra-refined, high-precision dark aesthetic engineered for instant incident triage and telemetry clarity. Moving away from generic bulky cards or distracting glass blurs, the interface relies on sharp geometry, hairline borders, pitch-dark surfaces, and vibrant glowing status indicators.
 
 ### Core Principles
-1. **Tactile & Soft**: Heavy border radii (`rounded-2xl`, `rounded-3xl`) and soft dual shadows give elements a touchable, physical clay feel.
-2. **Minimalist & Clean**: Neutral, warm, off-white backdrops in light mode (`#f8fafc`) and deep slate backdrops in dark mode (`#0f172a`), allowing status accents to pop.
-3. **Pill Badges & Metrics**: Status indicators use rounded pill shapes with inner shadows and high-contrast text.
-4. **High Contrast & Readability**: Inter / System sans-serif typography with strict hierarchy for instant readability during incident triage.
+1. **Precision Hierarchy & Hairline Micro-Borders**: 1px subtle hairline borders (`border-slate-800/80` transitioning to `border-slate-700` or glowing accent borders on hover) provide crisp separation between containers.
+2. **Telemetry-First Typography**: Clean Inter typography for headers and metadata, paired with JetBrains Mono tabular figures for latency, queue counts, memory usage, and timestamps.
+3. **Vibrant Status Glow Indicators**: Pulsing live dots with glowing aura shadows (`Operational` emerald `#10b981`, `Degraded` amber `#f59e0b`, `Outage` rose `#f43f5e`, `Maintenance` indigo `#6366f1`).
+4. **Data Visualizations**: SVG path sparklines with smooth gradient masks under response latency curves.
+5. **Tactile Micro-Interactions**: Tactile button press feedback (`active:scale-[0.98]`), hover ambient glows, and clean backdrop blur drawers.
 
 ---
 
 ## 🎨 Color Palette & Tokens
 
 ### Background & Surface Tokens
-| Token | Light Mode Value | Dark Mode Value | Usage |
-| :--- | :--- | :--- | :--- |
-| `--bg-app` | `#f8fafc` (Slate 50) | `#0f172a` (Slate 900) | App backdrop |
-| `--bg-surface` | `#ffffff` | `#1e293b` (Slate 800) | Clay Cards & Containers |
-| `--bg-surface-subtle` | `#f1f5f9` (Slate 100) | `#334155` (Slate 700) | Sub-cards, Inputs, Hover states |
+| Token | Dark Mode Value | Usage |
+| :--- | :--- | :--- |
+| `--bg-app` | `#030712` (Zinc 950) | Deep pitch canvas |
+| `--bg-surface` | `#090d16` (Slate 950) | Main container cards & sections |
+| `--bg-surface-elevated` | `#0f172a` (Slate 900) | Raised buttons, inputs & popups |
+| `--border-subtle` | `rgba(255, 255, 255, 0.08)` | Hairline container borders |
 
 ### Health Status Token Palette
-| Status | Accent Color | Pill Background | Text Color | State Meaning |
+| Status | Accent Color | Glow Aura | Text Color | Meaning |
 | :--- | :--- | :--- | :--- | :--- |
-| **Operational** | `#22c55e` (Emerald 500) | `#dcfce7` (Emerald 100) | `#15803d` (Emerald 700) | All checks passing, low queue backlog |
-| **Degraded** | `#f59e0b` (Amber 500) | `#fef3c7` (Amber 100) | `#b45309` (Amber 700) | High latency, queue delay, or minor DB spike |
-| **Outage** | `#f43f5e` (Rose 500) | `#ffe4e6` (Rose 100) | `#be123c` (Rose 700) | Endpoint down, DB failed, or job spike |
-| **Maintenance** | `#6366f1` (Indigo 500) | `#e0e7ff` (Indigo 100) | `#4338ca` (Indigo 700) | Service muted during planned deploy |
+| **Operational** | `#10b981` (Emerald 500) | `0 0 12px rgba(16,185,129,0.4)` | `#34d399` (Emerald 400) | All checks passing, low queue backlog |
+| **Degraded** | `#f59e0b` (Amber 500) | `0 0 12px rgba(245,158,11,0.4)` | `#fbbf24` (Amber 400) | High latency or queue backlog spike |
+| **Outage** | `#f43f5e` (Rose 500) | `0 0 12px rgba(244,63,94,0.4)` | `#fb7185` (Rose 400) | Endpoint down or job execution failure |
+| **Maintenance** | `#6366f1` (Indigo 500) | `0 0 12px rgba(99,102,241,0.4)` | `#818cf8` (Indigo 400) | Service muted during deployment |
 
 ---
 
-## 🌓 Claymorphic Shadow Specs
+## ⚡ Micro-Interactions & Styling Tokens
 
-### Light Mode Clay Shadows
 ```css
-/* Card Surface */
-.clay-card {
-  background-color: #ffffff;
-  border-radius: 1.5rem; /* rounded-3xl */
-  box-shadow: 
-    8px 8px 16px rgba(15, 23, 42, 0.06),
-    -8px -8px 16px rgba(255, 255, 255, 0.9);
+/* Card Container */
+.linear-card {
+  background-color: #090d16;
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  border-radius: 1rem; /* rounded-2xl */
+  transition: border-color 0.2s ease, transform 0.2s ease, box-shadow 0.2s ease;
+}
+
+.linear-card:hover {
+  border-color: rgba(255, 255, 255, 0.16);
 }
 
 /* Button & Interactive Surfaces */
-.clay-btn {
-  background-color: #f8fafc;
-  border-radius: 1rem;
-  box-shadow: 
-    4px 4px 8px rgba(15, 23, 42, 0.08),
-    -4px -4px 8px rgba(255, 255, 255, 0.9);
-  transition: transform 0.15s ease, box-shadow 0.15s ease;
+.linear-btn {
+  background-color: #0f172a;
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  border-radius: 0.75rem; /* rounded-xl */
+  transition: all 0.15s ease;
 }
 
-.clay-btn:active {
-  transform: scale(0.97);
-  box-shadow: 
-    inset 3px 3px 6px rgba(15, 23, 42, 0.1),
-    inset -3px -3px 6px rgba(255, 255, 255, 0.9);
-}
-
-/* Inset Soft Clay Wells (for inputs and sub-boxes) */
-.clay-inset {
-  box-shadow: 
-    inset 3px 3px 6px rgba(15, 23, 42, 0.06),
-    inset -3px -3px 6px rgba(255, 255, 255, 0.8);
+.linear-btn:active {
+  transform: scale(0.98);
 }
 ```
 
-### Dark Mode Clay Shadows
-```css
-/* Dark Clay Card Surface */
-.dark .clay-card {
-  background-color: #1e293b;
-  border-radius: 1.5rem;
-  box-shadow: 
-    8px 8px 20px rgba(0, 0, 0, 0.35),
-    -6px -6px 16px rgba(255, 255, 255, 0.03);
-}
-
-.dark .clay-inset {
-  box-shadow: 
-    inset 4px 4px 8px rgba(0, 0, 0, 0.4),
-    inset -4px -4px 8px rgba(255, 255, 255, 0.02);
-}
-```
-
----
-
-## 📐 Component Specs & States
-
-### 1. Service Fleet Card
-- **Header**: Service Title + Environment badge (`production` / `staging`) + Operational Status Pill.
-- **Body**: 
-  - Latency Sparkline (`42ms` avg).
-  - Health Metric Pills: Database, Redis, Queue Backlog.
-  - SSL Certificate status badge (`SSL 45d left`).
-- **Footer**: Last polled timestamp, Manual Re-poll button, and Horizon/Failed Jobs Inspector trigger.
-
-### 2. Status Pill Badge
-- **Shape**: `rounded-full` with padding `px-3 py-1`.
-- **Icon**: Pulsing live indicator dot (`w-2 h-2 rounded-full animate-pulse`).
-
-### 3. Horizon & Failed Jobs Inspector Drawer
-- **Title**: Service Name + Failed Job Count counter badge.
-- **Content**: Expandable accordion list of failed jobs with exception class, message snippet, and copyable full stack trace.
-
----
-
-## ⚡ Micro-Interactions
-
-- **Hover Lift**: Cards lift slightly (`-translate-y-0.5`) on mouse hover.
-- **Tactile Press**: Buttons scale down to `0.98` with inset shadow shift when clicked.
-- **Status Pulse**: Live health dots pulse softly every 2 seconds.

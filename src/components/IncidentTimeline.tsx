@@ -1,67 +1,90 @@
 import React from 'react';
-import { Activity, Clock } from 'lucide-react';
+import { Activity, CheckCircle2, AlertTriangle, XCircle, Clock } from 'lucide-react';
 import { useHealth } from '../hooks/useHealth';
+import type { HealthStatus, Incident } from '../types';
 
 export const IncidentTimeline: React.FC = () => {
   const { incidents } = useHealth();
 
-  if (incidents.length === 0) {
-    return (
-      <div className="bg-slate-900 border border-slate-800/80 rounded-3xl p-6 shadow-[6px_6px_16px_rgba(0,0,0,0.4)] text-center select-none">
-        <div className="w-10 h-10 rounded-2xl bg-emerald-950/80 border border-emerald-800/60 flex items-center justify-center text-emerald-400 mx-auto mb-3">
-          <Activity className="w-5 h-5" />
-        </div>
-        <h3 className="text-sm font-bold text-slate-200">System Fleet Nominal</h3>
-        <p className="text-xs text-slate-400 mt-1">No health state transitions or outage incidents recorded during this session.</p>
-      </div>
-    );
-  }
+  const getStatusIcon = (status: HealthStatus) => {
+    switch (status) {
+      case 'operational':
+        return <CheckCircle2 className="w-4 h-4 text-emerald-400" />;
+      case 'degraded':
+        return <AlertTriangle className="w-4 h-4 text-amber-400" />;
+      case 'outage':
+        return <XCircle className="w-4 h-4 text-rose-400" />;
+      case 'maintenance':
+        return <Clock className="w-4 h-4 text-indigo-400" />;
+      default:
+        return <Activity className="w-4 h-4 text-slate-400" />;
+    }
+  };
+
+  const getStatusBorder = (status: HealthStatus) => {
+    switch (status) {
+      case 'operational':
+        return 'border-l-emerald-500';
+      case 'degraded':
+        return 'border-l-amber-500';
+      case 'outage':
+        return 'border-l-rose-500';
+      case 'maintenance':
+        return 'border-l-indigo-500';
+      default:
+        return 'border-l-slate-700';
+    }
+  };
 
   return (
-    <div className="bg-slate-900 border border-slate-800/80 rounded-3xl p-6 shadow-[6px_6px_16px_rgba(0,0,0,0.4)]">
-      <div className="flex items-center space-x-2 border-b border-slate-800 pb-3 mb-4 select-none">
-        <Activity className="w-4 h-4 text-emerald-400" />
-        <h3 className="text-sm font-bold text-slate-200">Incident Event Timeline</h3>
+    <div className="rounded-2xl p-5 linear-card select-none">
+      {/* Timeline Header */}
+      <div className="flex items-center justify-between border-b border-slate-800/80 pb-3.5 mb-4">
+        <div className="flex items-center space-x-2.5">
+          <div className="w-8 h-8 rounded-lg bg-indigo-950/60 border border-indigo-800/40 flex items-center justify-center text-indigo-400">
+            <Activity className="w-4 h-4" />
+          </div>
+          <div>
+            <h3 className="text-sm font-bold text-slate-100">Incident & Health Event Log</h3>
+            <p className="text-xs text-slate-400">Chronological telemetry transitions & alerts</p>
+          </div>
+        </div>
       </div>
 
-      <div className="space-y-3 max-h-72 overflow-y-auto pr-1">
-        {incidents.map((inc) => {
-          const isOutage = inc.new_status === 'outage';
-          const isDegraded = inc.new_status === 'degraded';
-
-          const badgeBg = isOutage
-            ? 'bg-rose-950 text-rose-300 border-rose-800'
-            : isDegraded
-            ? 'bg-amber-950 text-amber-300 border-amber-800'
-            : 'bg-emerald-950 text-emerald-300 border-emerald-800';
-
-          return (
+      {/* Timeline Event List */}
+      {incidents.length === 0 ? (
+        <div className="p-6 text-center linear-well rounded-xl">
+          <p className="text-xs font-semibold text-slate-400">No recent health status transitions recorded.</p>
+          <p className="text-[11px] text-slate-500 mt-1 font-mono">System telemetry is stable across all endpoints.</p>
+        </div>
+      ) : (
+        <div className="space-y-2.5 max-h-72 overflow-y-auto pr-1">
+          {incidents.map((log: Incident) => (
             <div
-              key={inc.id}
-              className="p-3 rounded-2xl bg-slate-950/60 border border-slate-800/60 flex flex-col sm:flex-row sm:items-center justify-between gap-2 text-xs"
+              key={log.id}
+              className={`p-3 rounded-xl linear-well border-l-4 ${getStatusBorder(log.new_status)} flex items-center justify-between gap-3 text-xs`}
             >
-              <div className="flex items-start space-x-3">
-                <div className="w-7 h-7 rounded-xl bg-slate-800 flex items-center justify-center text-slate-300 font-bold text-[10px] flex-shrink-0 mt-0.5 select-none">
-                  <Clock className="w-3.5 h-3.5 text-slate-400" />
-                </div>
-                <div>
-                  <div className="flex items-center space-x-2 select-none">
-                    <span className="font-bold text-slate-200">{inc.service_name}</span>
-                    <span className={`text-[10px] font-mono px-2 py-0.5 rounded border uppercase ${badgeBg}`}>
-                      {inc.previous_status} → {inc.new_status}
-                    </span>
-                  </div>
-                  <p className="text-slate-400 mt-1">{inc.reason}</p>
+              <div className="flex items-center space-x-3 truncate">
+                {getStatusIcon(log.new_status)}
+                <div className="truncate">
+                  <span className="font-bold text-slate-200">{log.service_name}</span>
+                  <span className="text-slate-400 font-medium"> transitioned from </span>
+                  <span className="font-mono font-bold uppercase text-slate-400">{log.previous_status}</span>
+                  <span className="text-slate-400 font-medium"> to </span>
+                  <span className="font-mono font-bold capitalize text-slate-100">{log.new_status}</span>
+                  {log.reason && (
+                    <p className="text-slate-400 text-[11px] truncate mt-0.5 font-mono">{log.reason}</p>
+                  )}
                 </div>
               </div>
 
-              <span className="text-[11px] font-mono text-slate-400 flex-shrink-0 self-end sm:self-center select-none">
-                {inc.timestamp}
+              <span className="text-[11px] font-mono text-slate-400 shrink-0">
+                {log.timestamp}
               </span>
             </div>
-          );
-        })}
-      </div>
+          ))}
+        </div>
+      )}
     </div>
   );
 };

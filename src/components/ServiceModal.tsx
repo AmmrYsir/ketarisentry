@@ -59,35 +59,35 @@ export const ServiceModal: React.FC = () => {
 
   return (
     <div className="fixed inset-0 z-50 bg-slate-950/80 backdrop-blur-sm flex items-center justify-center p-4 overflow-y-auto animate-in fade-in duration-200">
-      <div className="w-full max-w-xl bg-slate-900 border border-slate-800 rounded-3xl p-6 shadow-[8px_8px_24px_rgba(0,0,0,0.6)] relative">
+      <div className="w-full max-w-xl bg-slate-900/95 border border-slate-800/80 rounded-3xl p-6 sm:p-8 shadow-clay-card relative my-8">
         
         {/* Modal Header */}
-        <div className="flex items-center justify-between border-b border-slate-800 pb-4 mb-5 select-none">
-          <div className="flex items-center space-x-3">
-            <div className="w-10 h-10 rounded-2xl bg-emerald-950/80 border border-emerald-800/60 flex items-center justify-center text-emerald-400">
-              <Server className="w-5 h-5" />
+        <div className="flex items-center justify-between border-b border-slate-800/80 pb-4 mb-6 select-none">
+          <div className="flex items-center space-x-3.5">
+            <div className="w-12 h-12 rounded-2xl bg-emerald-950/80 border border-emerald-800/60 flex items-center justify-center text-emerald-400 shadow-clay-btn">
+              <Server className="w-6 h-6" />
             </div>
             <div>
-              <h2 className="text-lg font-bold text-slate-100">
+              <h2 className="text-lg font-extrabold text-slate-100 font-sans">
                 {editingService ? 'Edit Target Service' : 'Add New Service Endpoint'}
               </h2>
-              <p className="text-xs text-slate-400">Configure Pull Polling parameters & security</p>
+              <p className="text-xs text-slate-400 font-semibold">Configure Pull Polling parameters & security</p>
             </div>
           </div>
 
           <button
             onClick={closeAddModal}
-            className="p-2 rounded-xl bg-slate-800 text-slate-400 hover:text-white hover:bg-slate-700 active:scale-95 transition-all cursor-pointer"
+            className="p-2.5 rounded-2xl bg-slate-800 text-slate-400 hover:text-white hover:bg-slate-700/80 active:scale-95 transition-all shadow-clay-btn border border-slate-700/60 cursor-pointer"
             aria-label="Close modal"
           >
             <X className="w-5 h-5" />
           </button>
         </div>
 
-        <form onSubmit={handleSubmit} className="space-y-4">
+        <form onSubmit={handleSubmit} className="space-y-4.5">
           {/* Service Name */}
           <div>
-            <label htmlFor="service-name" className="block text-xs font-semibold text-slate-300 mb-1.5 cursor-pointer">
+            <label htmlFor="service-name" className="block text-xs font-bold text-slate-300 mb-1.5 cursor-pointer">
               Service Name <span className="text-rose-400">*</span>
             </label>
             <input
@@ -96,14 +96,14 @@ export const ServiceModal: React.FC = () => {
               value={name}
               onChange={(e) => setName(e.target.value)}
               placeholder="e.g. Laravel E-Commerce API"
-              className="w-full px-3.5 py-2.5 rounded-xl bg-slate-950 border border-slate-800 text-slate-100 text-xs focus:outline-none focus:border-emerald-500 focus:ring-1 focus:ring-emerald-500 transition-all shadow-[inset_2px_2px_4px_rgba(0,0,0,0.4)]"
+              className="w-full px-4 py-2.5 rounded-2xl bg-slate-950/90 border border-slate-800/80 text-slate-100 text-xs focus:outline-none focus:border-emerald-500 transition-all shadow-clay-inset"
               required
             />
           </div>
 
           {/* Health Endpoint URL */}
           <div>
-            <label htmlFor="service-url" className="block text-xs font-semibold text-slate-300 mb-1.5 cursor-pointer">
+            <label htmlFor="service-url" className="block text-xs font-bold text-slate-300 mb-1.5 cursor-pointer">
               Health Endpoint URL <span className="text-rose-400">*</span>
             </label>
             <input
@@ -112,18 +112,18 @@ export const ServiceModal: React.FC = () => {
               value={url}
               onChange={(e) => setUrl(e.target.value)}
               placeholder="https://api.example.com/ketari/health"
-              className="w-full px-3.5 py-2.5 rounded-xl bg-slate-950 border border-slate-800 text-slate-100 text-xs font-mono focus:outline-none focus:border-emerald-500 focus:ring-1 focus:ring-emerald-500 transition-all shadow-[inset_2px_2px_4px_rgba(0,0,0,0.4)]"
+              className="w-full px-4 py-2.5 rounded-2xl bg-slate-950/90 border border-slate-800/80 text-slate-100 text-xs font-mono focus:outline-none focus:border-emerald-500 transition-all shadow-clay-inset"
               required
             />
           </div>
 
           {/* Environment & Poll Interval Row */}
-          <div className="grid grid-cols-2 gap-3">
+          <div className="grid grid-cols-2 gap-3.5">
             <div>
-              <label htmlFor="service-env" className="block text-xs font-semibold text-slate-300 mb-1.5 cursor-pointer">Environment</label>
+              <label htmlFor="service-env" className="block text-xs font-bold text-slate-300 mb-1.5 cursor-pointer">Environment</label>
               <CustomSelect
                 value={environment}
-                onChange={(val) => setEnvironment(val as any)}
+                onChange={(val) => setEnvironment(val as 'production' | 'staging' | 'local')}
                 options={[
                   { value: 'production', label: 'Production' },
                   { value: 'staging', label: 'Staging' },
@@ -134,12 +134,12 @@ export const ServiceModal: React.FC = () => {
             </div>
 
             <div>
-              <label htmlFor="poll-interval" className="block text-xs font-semibold text-slate-300 mb-1.5 cursor-pointer">Polling Frequency</label>
+              <label htmlFor="poll-interval" className="block text-xs font-bold text-slate-300 mb-1.5 cursor-pointer">Polling Frequency</label>
               <CustomSelect
                 value={pollInterval}
                 onChange={(val) => setPollInterval(Number(val))}
                 options={[
-                  { value: 15, label: 'Every 15 seconds (High Frequency)' },
+                  { value: 15, label: 'Every 15s (High Frequency)' },
                   { value: 30, label: 'Every 30 seconds' },
                   { value: 60, label: 'Every 1 minute' },
                   { value: 300, label: 'Every 5 minutes' },
@@ -150,9 +150,9 @@ export const ServiceModal: React.FC = () => {
           </div>
 
           {/* Timeout & Secret Key */}
-          <div className="grid grid-cols-2 gap-3">
+          <div className="grid grid-cols-2 gap-3.5">
             <div>
-              <label htmlFor="timeout-limit" className="block text-xs font-semibold text-slate-300 mb-1.5 cursor-pointer">Timeout Limit</label>
+              <label htmlFor="timeout-limit" className="block text-xs font-bold text-slate-300 mb-1.5 cursor-pointer">Timeout Limit</label>
               <CustomSelect
                 value={timeoutSec}
                 onChange={(val) => setTimeoutSec(Number(val))}
@@ -166,7 +166,7 @@ export const ServiceModal: React.FC = () => {
             </div>
 
             <div>
-              <label htmlFor="secret-key" className="block text-xs font-semibold text-slate-300 mb-1.5 cursor-pointer">
+              <label htmlFor="secret-key" className="block text-xs font-bold text-slate-300 mb-1.5 cursor-pointer">
                 X-Ketari-Secret Key (Optional)
               </label>
               <input
@@ -175,14 +175,14 @@ export const ServiceModal: React.FC = () => {
                 value={secretKey}
                 onChange={(e) => setSecretKey(e.target.value)}
                 placeholder="sk_live_..."
-                className="w-full px-3.5 py-2.5 rounded-xl bg-slate-950 border border-slate-800 text-slate-100 text-xs font-mono focus:outline-none focus:border-emerald-500 focus:ring-1 focus:ring-emerald-500 transition-all shadow-[inset_2px_2px_4px_rgba(0,0,0,0.4)]"
+                className="w-full px-4 py-2.5 rounded-2xl bg-slate-950/90 border border-slate-800/80 text-slate-100 text-xs font-mono focus:outline-none focus:border-emerald-500 transition-all shadow-clay-inset"
               />
             </div>
           </div>
 
           {/* Authorization Bearer Header */}
           <div>
-            <label htmlFor="auth-header" className="block text-xs font-semibold text-slate-300 mb-1.5 cursor-pointer">
+            <label htmlFor="auth-header" className="block text-xs font-bold text-slate-300 mb-1.5 cursor-pointer">
               Custom Authorization Header (Optional)
             </label>
             <input
@@ -191,22 +191,22 @@ export const ServiceModal: React.FC = () => {
               value={authHeader}
               onChange={(e) => setAuthHeader(e.target.value)}
               placeholder="Bearer your-api-token"
-              className="w-full px-3.5 py-2.5 rounded-xl bg-slate-950 border border-slate-800 text-slate-100 text-xs font-mono focus:outline-none focus:border-emerald-500 focus:ring-1 focus:ring-emerald-500 transition-all shadow-[inset_2px_2px_4px_rgba(0,0,0,0.4)]"
+              className="w-full px-4 py-2.5 rounded-2xl bg-slate-950/90 border border-slate-800/80 text-slate-100 text-xs font-mono focus:outline-none focus:border-emerald-500 transition-all shadow-clay-inset"
             />
           </div>
 
           {/* Modal Footer Controls */}
-          <div className="pt-4 border-t border-slate-800 flex items-center justify-end space-x-3 select-none">
+          <div className="pt-4 border-t border-slate-800/80 flex items-center justify-end space-x-3 select-none">
             <button
               type="button"
               onClick={closeAddModal}
-              className="px-4 py-2.5 rounded-xl bg-slate-800 hover:bg-slate-700 text-slate-300 text-xs font-semibold transition-all active:scale-95 cursor-pointer"
+              className="px-4 py-2.5 rounded-2xl bg-slate-800 hover:bg-slate-700/80 text-slate-300 text-xs font-bold transition-all active:scale-95 shadow-clay-btn border border-slate-700/60 cursor-pointer"
             >
               Cancel
             </button>
             <button
               type="submit"
-              className="px-5 py-2.5 rounded-xl bg-emerald-600 hover:bg-emerald-500 text-white text-xs font-semibold transition-all shadow-[3px_3px_8px_rgba(16,185,129,0.3)] active:scale-95 cursor-pointer"
+              className="px-5 py-2.5 rounded-2xl bg-emerald-600 hover:bg-emerald-500 text-white text-xs font-extrabold transition-all shadow-clay-btn border border-emerald-500/50 active:scale-95 cursor-pointer"
             >
               {editingService ? 'Save Changes' : 'Register Service'}
             </button>
@@ -216,3 +216,4 @@ export const ServiceModal: React.FC = () => {
     </div>
   );
 };
+

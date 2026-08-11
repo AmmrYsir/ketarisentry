@@ -1,6 +1,6 @@
 export type HealthStatus = 'operational' | 'degraded' | 'outage' | 'maintenance';
 
-export type UserRole = 'admin' | 'operator' | 'viewer';
+export type UserRole = 'admin' | 'superadmin' | 'operator' | 'viewer';
 
 export type CheckType =
   | 'database'

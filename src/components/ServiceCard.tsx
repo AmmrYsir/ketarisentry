@@ -147,6 +147,16 @@ export const ServiceCard: React.FC<ServiceCardProps> = ({ config, result }) => {
           </div>
         </div>
 
+        {/* Error message alert box */}
+        {isEnabled && result?.error_message && (
+          <div className="my-3 p-2.5 rounded-2xl bg-rose-950/40 border border-rose-900/50 text-rose-300 text-xs font-mono break-all flex items-start gap-2 select-text shadow-[inset_2px_2px_4px_rgba(0,0,0,0.4)]">
+            <AlertOctagon className="w-4 h-4 text-rose-400 shrink-0 mt-0.5" />
+            <div>
+              <span className="font-bold text-rose-400">Error:</span> {result.error_message}
+            </div>
+          </div>
+        )}
+
         {/* Latency History & Metric Bar */}
         {isEnabled ? (
           <div className="my-4 p-3 rounded-2xl bg-slate-950/60 border border-slate-800/60 shadow-[inset_2px_2px_4px_rgba(0,0,0,0.4)] select-none">
@@ -194,10 +204,14 @@ export const ServiceCard: React.FC<ServiceCardProps> = ({ config, result }) => {
               const textColor = isOk ? 'text-emerald-400' : isWarning ? 'text-amber-400' : 'text-rose-400';
 
               return (
-                <div key={key} className="p-2.5 rounded-xl bg-slate-950/40 border border-slate-800/50 flex items-center justify-between">
+                <div 
+                  key={key} 
+                  className={`p-2.5 rounded-xl bg-slate-950/40 border border-slate-800/50 flex items-center justify-between ${check.message ? 'cursor-help' : ''}`}
+                  title={check.message ? `${check.name}: ${check.message}` : check.name}
+                >
                   <div className="flex items-center space-x-2 truncate">
                     {getCheckIcon(check.type)}
-                    <span className="text-xs font-semibold text-slate-300 truncate" title={check.name}>
+                    <span className="text-xs font-semibold text-slate-300 truncate">
                       {check.name}
                     </span>
                   </div>
@@ -330,8 +344,8 @@ export const ServiceCard: React.FC<ServiceCardProps> = ({ config, result }) => {
             </button>
           )}
 
-          {/* Edit Service (Admin only) */}
-          {user?.role === 'admin' && (
+          {/* Edit Service (Admin/Superadmin only) */}
+          {(user?.role === 'admin' || user?.role === 'superadmin') && (
             <>
               <button
                 onClick={() => openAddModal(config)}

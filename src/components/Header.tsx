@@ -1,17 +1,13 @@
-import React from 'react';
+import React, { useState, useRef, useEffect } from 'react';
 import { 
   Shield, 
   RefreshCw, 
   Plus, 
-  Power, 
   Download, 
   Upload, 
   LogOut, 
-  CheckCircle2,
-  AlertTriangle,
-  XCircle,
-  Clock,
-  FileText
+  FileText,
+  ChevronDown
 } from 'lucide-react';
 import { useAuth } from '../hooks/useAuth';
 import { useHealth } from '../hooks/useHealth';
@@ -25,31 +21,40 @@ export const Header: React.FC<HeaderProps> = ({ onOpenAuditLog }) => {
   const { 
     services, 
     results, 
-    isPollingActive, 
-    togglePolling, 
     triggerPollAll, 
     openAddModal, 
     exportConfigJson,
     importConfigJson 
   } = useHealth();
 
+  const [isMenuOpen, setIsMenuOpen] = useState(false);
+  const menuRef = useRef<HTMLDivElement>(null);
+
+  // Close dropdown on click outside
+  useEffect(() => {
+    const handleClickOutside = (e: MouseEvent) => {
+      if (menuRef.current && !menuRef.current.contains(e.target as Node)) {
+        setIsMenuOpen(false);
+      }
+    };
+    document.addEventListener('mousedown', handleClickOutside);
+    return () => document.removeEventListener('mousedown', handleClickOutside);
+  }, []);
+
   // Fleet stats computation
   let operationalCount = 0;
   let degradedCount = 0;
   let outageCount = 0;
-  let maintenanceCount = 0;
 
   services.forEach((s) => {
-    if (s.muted) {
-      maintenanceCount++;
-      return;
-    }
+    if (s.muted) return;
     const status = results[s.id]?.status || 'operational';
     if (status === 'operational') operationalCount++;
     else if (status === 'degraded') degradedCount++;
     else if (status === 'outage') outageCount++;
-    else if (status === 'maintenance') maintenanceCount++;
   });
+
+  const overallHealthy = outageCount === 0 && degradedCount === 0;
 
   const handleFileUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
@@ -67,160 +72,146 @@ export const Header: React.FC<HeaderProps> = ({ onOpenAuditLog }) => {
   };
 
   return (
-    <header className="w-full bg-[#030712]/90 border-b border-slate-800/80 sticky top-0 z-30 backdrop-blur-md">
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-3 flex flex-wrap items-center justify-between gap-4">
+    <header className="w-full bg-[#030712]/95 border-b border-slate-800/80 sticky top-0 z-30 backdrop-blur-md">
+      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 h-14 flex items-center justify-between select-none">
         
-        {/* Brand & Logo */}
-        <div className="flex items-center space-x-3 select-none">
-          <div className="w-9 h-9 rounded-xl bg-slate-900 border border-slate-700/60 flex items-center justify-center text-emerald-400 shadow-[0_0_15px_rgba(16,185,129,0.15)]">
-            <Shield className="w-5 h-5" />
-          </div>
-          <div>
-            <div className="flex items-center space-x-2">
-              <h1 className="text-base font-extrabold tracking-tight text-slate-100 font-sans">Ketarisentry</h1>
-              <span className="text-[10px] uppercase font-mono font-bold tracking-wider px-2 py-0.5 rounded-full bg-emerald-950/70 text-emerald-400 border border-emerald-800/50">
-                Hub
-              </span>
+        {/* Brand & Global Fleet Status */}
+        <div className="flex items-center space-x-4">
+          <div className="flex items-center space-x-2.5">
+            <div className="w-7 h-7 rounded-lg bg-slate-900 border border-slate-700/60 flex items-center justify-center text-emerald-400 shadow-[0_0_12px_rgba(16,185,129,0.2)]">
+              <Shield className="w-4 h-4" />
             </div>
-            <p className="text-[11px] text-slate-400 font-medium">Laravel Fleet Health & Telemetry</p>
+            <span className="text-sm font-extrabold tracking-tight text-slate-100 font-sans">
+              Ketarisentry
+            </span>
+          </div>
+
+          <div className="h-4 w-px bg-slate-800 hidden sm:block" />
+
+          {/* Minimalist Fleet Status Pulse */}
+          <div className="hidden sm:flex items-center space-x-2 px-2.5 py-1 rounded-full bg-slate-950/80 border border-slate-800 text-xs font-semibold">
+            {overallHealthy ? (
+              <>
+                <span className="w-2 h-2 rounded-full bg-emerald-400 animate-pulse glow-dot-emerald" />
+                <span className="text-slate-300 font-mono text-[11px]">
+                  {operationalCount}/{services.length} Fleet Nominal
+                </span>
+              </>
+            ) : outageCount > 0 ? (
+              <>
+                <span className="w-2 h-2 rounded-full bg-rose-400 animate-pulse glow-dot-rose" />
+                <span className="text-rose-400 font-mono text-[11px]">
+                  {outageCount} Outage Alert
+                </span>
+              </>
+            ) : (
+              <>
+                <span className="w-2 h-2 rounded-full bg-amber-400 animate-pulse glow-dot-amber" />
+                <span className="text-amber-400 font-mono text-[11px]">
+                  {degradedCount} Degraded Alert
+                </span>
+              </>
+            )}
           </div>
         </div>
 
-        {/* Fleet Quick Status Pills */}
-        <div className="hidden lg:flex items-center space-x-2 bg-slate-950/80 p-1 rounded-full border border-slate-800/80 select-none">
-          <div className="flex items-center space-x-2 px-3 py-1 rounded-full bg-emerald-950/40 border border-emerald-800/40 text-emerald-400 text-xs font-semibold">
-            <span className="w-2 h-2 rounded-full bg-emerald-400 animate-pulse glow-dot-emerald" />
-            <CheckCircle2 className="w-3.5 h-3.5" />
-            <span>{operationalCount} Operational</span>
-          </div>
-
-          {degradedCount > 0 && (
-            <div className="flex items-center space-x-2 px-3 py-1 rounded-full bg-amber-950/40 border border-amber-800/40 text-amber-400 text-xs font-semibold">
-              <span className="w-2 h-2 rounded-full bg-amber-400 animate-pulse glow-dot-amber" />
-              <AlertTriangle className="w-3.5 h-3.5" />
-              <span>{degradedCount} Degraded</span>
-            </div>
-          )}
-
-          {outageCount > 0 && (
-            <div className="flex items-center space-x-2 px-3 py-1 rounded-full bg-rose-950/40 border border-rose-800/40 text-rose-400 text-xs font-semibold">
-              <span className="w-2 h-2 rounded-full bg-rose-400 animate-pulse glow-dot-rose" />
-              <XCircle className="w-3.5 h-3.5" />
-              <span>{outageCount} Outage</span>
-            </div>
-          )}
-
-          {maintenanceCount > 0 && (
-            <div className="flex items-center space-x-2 px-3 py-1 rounded-full bg-indigo-950/40 border border-indigo-800/40 text-indigo-400 text-xs font-semibold">
-              <Clock className="w-3.5 h-3.5" />
-              <span>{maintenanceCount} Muted</span>
-            </div>
-          )}
-        </div>
-
-        {/* Action Controls & User Account */}
+        {/* Action Toolbar & User Profile */}
         <div className="flex items-center space-x-2">
-          {/* Re-poll All Button */}
-          <button
-            onClick={triggerPollAll}
-            className="p-2 rounded-xl linear-btn text-slate-300 hover:text-white cursor-pointer select-none"
-            title="Poll Fleet Now"
-            aria-label="Poll Fleet Now"
-          >
-            <RefreshCw className="w-4 h-4" />
-          </button>
-
-          {/* Toggle Auto Polling */}
-          <button
-            onClick={togglePolling}
-            className={`flex items-center space-x-1.5 px-3 py-2 rounded-xl text-xs font-semibold transition-all border cursor-pointer select-none active:scale-95 ${
-              isPollingActive
-                ? 'bg-emerald-950/60 text-emerald-400 border-emerald-800/50'
-                : 'bg-slate-900 text-slate-400 border-slate-800'
-            }`}
-            title="Toggle Auto Polling"
-            aria-label="Toggle Auto Polling"
-          >
-            <Power className="w-3.5 h-3.5" />
-            <span className="hidden sm:inline">{isPollingActive ? 'Polling Active' : 'Polling Paused'}</span>
-          </button>
-
-          {/* Add Service Button (Admin/Operator only) */}
+          
+          {/* Primary Action Button */}
           {user?.role !== 'viewer' && (
             <button
               onClick={() => openAddModal()}
-              className="flex items-center space-x-1.5 px-3.5 py-2 rounded-xl bg-emerald-600 hover:bg-emerald-500 text-white text-xs font-bold transition-all shadow-[0_0_12px_rgba(16,185,129,0.25)] active:scale-95 cursor-pointer select-none border border-emerald-500/50"
+              className="flex items-center space-x-1.5 px-3 py-1.5 rounded-lg bg-emerald-600 hover:bg-emerald-500 text-white text-xs font-bold transition-all shadow-[0_0_12px_rgba(16,185,129,0.25)] active:scale-95 cursor-pointer border border-emerald-500/50"
               aria-label="Add Target Service Endpoint"
             >
-              <Plus className="w-4 h-4" />
-              <span>Add Service</span>
+              <Plus className="w-3.5 h-3.5" />
+              <span className="hidden sm:inline">Add Endpoint</span>
             </button>
           )}
 
-          {/* Audit Logs Button */}
-          {onOpenAuditLog && (
+          {/* Unified Action Button Strip */}
+          <div className="flex items-center p-0.5 rounded-lg linear-well">
             <button
-              onClick={onOpenAuditLog}
-              className="p-2 rounded-xl linear-btn text-slate-300 hover:text-white cursor-pointer select-none"
-              title="View SQLite Audit Logs"
-              aria-label="View SQLite Audit Logs"
+              onClick={triggerPollAll}
+              className="p-1.5 text-slate-300 hover:text-white hover:bg-slate-800/80 rounded-md transition-all cursor-pointer"
+              title="Re-poll Fleet Now"
+              aria-label="Re-poll Fleet"
             >
-              <FileText className="w-4 h-4 text-indigo-400" />
+              <RefreshCw className="w-3.5 h-3.5" />
             </button>
-          )}
 
-          {/* Export / Import Buttons */}
-          <button
-            onClick={exportConfigJson}
-            className="p-2 rounded-xl linear-btn text-slate-300 hover:text-white cursor-pointer select-none"
-            title="Export Fleet Config JSON"
-            aria-label="Export Fleet Config JSON"
-          >
-            <Download className="w-4 h-4" />
-          </button>
-
-          <label
-            className="p-2 rounded-xl linear-btn text-slate-300 hover:text-white cursor-pointer select-none"
-            title="Import Fleet Config JSON"
-            aria-label="Import Fleet Config JSON"
-          >
-            <Upload className="w-4 h-4" />
-            <input type="file" accept=".json" onChange={handleFileUpload} className="hidden" />
-          </label>
-
-          {/* User Account Menu */}
-          {isAuthenticated && (
-            <div className="flex items-center space-x-2.5 pl-2 border-l border-slate-800 select-none">
-              <img
-                src={user?.avatar || 'https://api.dicebear.com/7.x/bottts/svg?seed=Admin'}
-                alt={user?.name}
-                className="w-7 h-7 rounded-lg ring-1 ring-emerald-500/40 object-cover"
-              />
-              <div className="hidden md:block text-left">
-                <div className="flex items-center space-x-1.5">
-                  <span className="text-xs font-bold text-slate-200">{user?.name}</span>
-                  {user?.is_sandbox && (
-                    <span className="text-[9px] px-1.5 py-0.2 rounded bg-amber-950 text-amber-400 font-mono font-bold border border-amber-800/40">Demo</span>
-                  )}
-                </div>
-                <span className="text-[10px] text-slate-400 capitalize block font-mono">
-                  Role: {user?.role || 'Admin'}
-                </span>
-              </div>
+            {onOpenAuditLog && (
               <button
-                onClick={logout}
-                className="p-1.5 text-slate-400 hover:text-rose-400 active:scale-95 transition-colors cursor-pointer select-none"
-                title="Sign Out"
-                aria-label="Sign Out"
+                onClick={onOpenAuditLog}
+                className="p-1.5 text-slate-300 hover:text-white hover:bg-slate-800/80 rounded-md transition-all cursor-pointer"
+                title="View Audit Logs"
+                aria-label="View Audit Logs"
               >
-                <LogOut className="w-4 h-4" />
+                <FileText className="w-3.5 h-3.5 text-indigo-400" />
               </button>
+            )}
+
+            <button
+              onClick={exportConfigJson}
+              className="p-1.5 text-slate-300 hover:text-white hover:bg-slate-800/80 rounded-md transition-all cursor-pointer"
+              title="Export Fleet Config JSON"
+              aria-label="Export Config"
+            >
+              <Download className="w-3.5 h-3.5" />
+            </button>
+
+            <label
+              className="p-1.5 text-slate-300 hover:text-white hover:bg-slate-800/80 rounded-md transition-all cursor-pointer"
+              title="Import Fleet Config JSON"
+              aria-label="Import Config"
+            >
+              <Upload className="w-3.5 h-3.5" />
+              <input type="file" accept=".json" onChange={handleFileUpload} className="hidden" />
+            </label>
+          </div>
+
+          {/* Compact Refined User Session Menu */}
+          {isAuthenticated && (
+            <div ref={menuRef} className="relative pl-1">
+              <button
+                onClick={() => setIsMenuOpen((prev) => !prev)}
+                className="flex items-center space-x-2 p-1 rounded-lg hover:bg-slate-900 border border-transparent hover:border-slate-800 transition-all cursor-pointer"
+                aria-label="User account menu"
+                aria-expanded={isMenuOpen}
+              >
+                <img
+                  src={user?.avatar || 'https://api.dicebear.com/7.x/bottts/svg?seed=Admin'}
+                  alt={user?.name}
+                  className="w-6 h-6 rounded-md ring-1 ring-emerald-500/40 object-cover"
+                />
+                <span className="hidden md:inline text-xs font-bold text-slate-200">
+                  {user?.name}
+                </span>
+                <ChevronDown className={`w-3 h-3 text-slate-400 transition-transform ${isMenuOpen ? 'rotate-180 text-emerald-400' : ''}`} />
+              </button>
+
+              {/* User Dropdown Menu */}
+              {isMenuOpen && (
+                <div className="absolute right-0 mt-2 w-48 bg-[#090d16] border border-slate-800/80 rounded-xl shadow-2xl py-1.5 z-50 animate-in fade-in duration-100">
+                  <div className="px-3.5 py-2 border-b border-slate-800/80">
+                    <p className="text-xs font-bold text-slate-200 truncate">{user?.name}</p>
+                    <p className="text-[10px] text-slate-400 font-mono capitalize">Role: {user?.role}</p>
+                  </div>
+                  <button
+                    onClick={logout}
+                    className="w-full px-3.5 py-2 text-xs text-rose-400 hover:bg-rose-950/40 flex items-center space-x-2 transition-colors cursor-pointer text-left font-semibold"
+                  >
+                    <LogOut className="w-3.5 h-3.5" />
+                    <span>Sign Out</span>
+                  </button>
+                </div>
+              )}
             </div>
           )}
+
         </div>
       </div>
     </header>
   );
 };
-
-

@@ -61,6 +61,7 @@ export interface ServiceConfig {
   environment: 'production' | 'staging' | 'local';
   poll_interval_sec: number;
   timeout_sec: number;
+  custom_latency_threshold_ms?: number;
   auth_header?: string;
   secret_key?: string;
   muted: boolean;

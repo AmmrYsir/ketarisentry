@@ -13,6 +13,27 @@ import { HealthContext } from './HealthContextObject';
 
 const LOCAL_STORAGE_SERVICES_KEY = 'ketarisentry_services';
 
+function playOutageAlertSound() {
+  try {
+    const AudioContextClass = window.AudioContext || (window as any).webkitAudioContext;
+    if (!AudioContextClass) return;
+    const ctx = new AudioContextClass();
+    const osc = ctx.createOscillator();
+    const gain = ctx.createGain();
+    osc.type = 'sawtooth';
+    osc.frequency.setValueAtTime(440, ctx.currentTime);
+    osc.frequency.exponentialRampToValueAtTime(880, ctx.currentTime + 0.3);
+    gain.gain.setValueAtTime(0.15, ctx.currentTime);
+    gain.gain.exponentialRampToValueAtTime(0.01, ctx.currentTime + 0.3);
+    osc.connect(gain);
+    gain.connect(ctx.destination);
+    osc.start();
+    osc.stop(ctx.currentTime + 0.3);
+  } catch {
+    // Audio context not allowed or unsupported
+  }
+}
+
 export const HealthProvider: React.FC<{ children: ReactNode }> = ({ children }) => {
   const [services, setServices] = useState<ServiceConfig[]>(() => {
     const localSaved = localStorage.getItem(LOCAL_STORAGE_SERVICES_KEY);
@@ -68,7 +89,7 @@ export const HealthProvider: React.FC<{ children: ReactNode }> = ({ children }) 
       const previousStatus = prevResult?.status || 'operational';
       const newStatus = res.status;
 
-      if (previousStatus !== newStatus && previousStatus !== 'operational') {
+      if (previousStatus !== newStatus) {
         const newIncident: Incident = {
           id: `inc_${Date.now()}`,
           service_id: service.id,
@@ -79,6 +100,17 @@ export const HealthProvider: React.FC<{ children: ReactNode }> = ({ children }) 
           timestamp: new Date().toLocaleTimeString(),
         };
         setIncidents((prevInc) => [newIncident, ...prevInc.slice(0, 19)]);
+
+        // Sound & Browser Alert for Outage
+        if (newStatus === 'outage') {
+          playOutageAlertSound();
+          if ('Notification' in window && Notification.permission === 'granted') {
+            new Notification(`🚨 KETARISENTRY OUTAGE ALERT: ${service.name}`, {
+              body: res.error_message || `Endpoint ${service.url} entered Outage state!`,
+              icon: '/favicon.ico',
+            });
+          }
+        }
       }
 
       return {

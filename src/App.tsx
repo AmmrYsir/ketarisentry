@@ -10,9 +10,6 @@ import { LoginPage } from './components/LoginPage';
 import { QueueInspectorModal } from './components/QueueInspectorModal';
 import { AuditLogModal } from './components/AuditLogModal';
 import { IncidentTimeline } from './components/IncidentTimeline';
-import { UserManagement } from './components/UserManagement';
-import { SettingsPage } from './components/SettingsPage';
-import { ProfilePage } from './components/ProfilePage';
 import { CustomSelect } from './components/CustomSelect';
 import { 
   Search, 
@@ -25,9 +22,15 @@ import {
   LayoutGrid,
   List,
   Zap,
-  Globe
+  Globe,
+  Loader2
 } from 'lucide-react';
 import type { HealthStatus, NavTab } from './types';
+
+// Code Splitting with React.lazy
+const UserManagement = React.lazy(() => import('./components/UserManagement').then(m => ({ default: m.UserManagement })));
+const SettingsPage = React.lazy(() => import('./components/SettingsPage').then(m => ({ default: m.SettingsPage })));
+const ProfilePage = React.lazy(() => import('./components/ProfilePage').then(m => ({ default: m.ProfilePage })));
 
 const DashboardContent: React.FC<{
   activeTab: NavTab;
@@ -103,16 +106,22 @@ const DashboardContent: React.FC<{
 
       <main className="flex-1 max-w-7xl w-full mx-auto px-4 sm:px-6 lg:px-8 py-6 space-y-6">
         
-        {/* RENDER VIEW ACCORDING TO NAV TAB */}
-        {activeTab === 'users' ? (
-          <UserManagement />
-        ) : activeTab === 'settings' ? (
-          <SettingsPage />
-        ) : activeTab === 'profile' ? (
-          <ProfilePage />
-        ) : (
-          /* DASHBOARD VIEW */
-          <div className="space-y-6">
+        {/* RENDER VIEW ACCORDING TO NAV TAB WITH SUSPENSE */}
+        <React.Suspense fallback={
+          <div className="py-20 text-center select-none flex flex-col items-center justify-center space-y-3">
+            <Loader2 className="w-8 h-8 text-emerald-400 animate-spin" />
+            <p className="text-xs font-mono text-slate-400">Loading module chunk...</p>
+          </div>
+        }>
+          {activeTab === 'users' ? (
+            <UserManagement />
+          ) : activeTab === 'settings' ? (
+            <SettingsPage />
+          ) : activeTab === 'profile' ? (
+            <ProfilePage />
+          ) : (
+            /* DASHBOARD VIEW */
+            <div className="space-y-6">
             {/* Fleet Metrics Summary Row */}
             <section className="grid grid-cols-2 lg:grid-cols-4 gap-4 select-none">
               <div className="rounded-xl p-4 linear-card flex items-center justify-between">
@@ -448,6 +457,7 @@ const DashboardContent: React.FC<{
             </div>
           </div>
         )}
+        </React.Suspense>
       </main>
 
       {/* Footer */}

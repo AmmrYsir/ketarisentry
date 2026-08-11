@@ -11,6 +11,7 @@ export const ServiceModal: React.FC = () => {
   const [environment, setEnvironment] = useState<'production' | 'staging' | 'local'>('production');
   const [pollInterval, setPollInterval] = useState(15);
   const [timeoutSec, setTimeoutSec] = useState(5);
+  const [customLatencyMs, setCustomLatencyMs] = useState(200);
   const [secretKey, setSecretKey] = useState('');
   const [authHeader, setAuthHeader] = useState('');
 
@@ -21,6 +22,7 @@ export const ServiceModal: React.FC = () => {
       setEnvironment(editingService.environment);
       setPollInterval(editingService.poll_interval_sec);
       setTimeoutSec(editingService.timeout_sec);
+      setCustomLatencyMs(editingService.custom_latency_threshold_ms || 200);
       setSecretKey(editingService.secret_key || '');
       setAuthHeader(editingService.auth_header || '');
     } else {
@@ -29,6 +31,7 @@ export const ServiceModal: React.FC = () => {
       setEnvironment('production');
       setPollInterval(15);
       setTimeoutSec(5);
+      setCustomLatencyMs(200);
       setSecretKey('');
       setAuthHeader('');
     }
@@ -50,6 +53,7 @@ export const ServiceModal: React.FC = () => {
       environment,
       poll_interval_sec: Number(pollInterval),
       timeout_sec: Number(timeoutSec),
+      custom_latency_threshold_ms: Number(customLatencyMs),
       secret_key: secretKey || undefined,
       auth_header: authHeader || undefined,
       muted: editingService?.muted || false,
@@ -149,7 +153,7 @@ export const ServiceModal: React.FC = () => {
             </div>
           </div>
 
-          {/* Timeout & Secret Key */}
+          {/* Timeout & Latency Warning Threshold */}
           <div className="grid grid-cols-2 gap-3.5">
             <div>
               <label htmlFor="timeout-limit" className="block text-xs font-bold text-slate-300 mb-1.5 cursor-pointer">Timeout Limit</label>
@@ -166,6 +170,25 @@ export const ServiceModal: React.FC = () => {
             </div>
 
             <div>
+              <label htmlFor="latency-threshold" className="block text-xs font-bold text-slate-300 mb-1.5 cursor-pointer">
+                Latency Warning Threshold
+              </label>
+              <CustomSelect
+                value={customLatencyMs}
+                onChange={(val) => setCustomLatencyMs(Number(val))}
+                options={[
+                  { value: 100, label: '> 100 ms (Strict)' },
+                  { value: 200, label: '> 200 ms (Standard)' },
+                  { value: 500, label: '> 500 ms (Relaxed)' },
+                  { value: 1000, label: '> 1000 ms (High Latency)' },
+                ]}
+                ariaLabel="Select Latency Threshold"
+              />
+            </div>
+          </div>
+          {/* Secret Key & Authorization Header */}
+          <div className="grid grid-cols-2 gap-3.5">
+            <div>
               <label htmlFor="secret-key" className="block text-xs font-bold text-slate-300 mb-1.5 cursor-pointer">
                 X-Ketari-Secret Key (Optional)
               </label>
@@ -178,7 +201,6 @@ export const ServiceModal: React.FC = () => {
                 className="w-full px-4 py-2.5 rounded-2xl bg-slate-950/90 border border-slate-800/80 text-slate-100 text-xs font-mono focus:outline-none focus:border-emerald-500 transition-all shadow-clay-inset"
               />
             </div>
-          </div>
 
           {/* Authorization Bearer Header */}
           <div>
@@ -194,6 +216,7 @@ export const ServiceModal: React.FC = () => {
               className="w-full px-4 py-2.5 rounded-2xl bg-slate-950/90 border border-slate-800/80 text-slate-100 text-xs font-mono focus:outline-none focus:border-emerald-500 transition-all shadow-clay-inset"
             />
           </div>
+        </div>
 
           {/* Modal Footer Controls */}
           <div className="pt-4 border-t border-slate-800/80 flex items-center justify-end space-x-3 select-none">

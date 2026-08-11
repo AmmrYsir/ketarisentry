@@ -49,6 +49,8 @@ export const ServiceCard: React.FC<ServiceCardProps> = ({ config, result, viewMo
   }
 
   const latency = result?.latency_ms || 0;
+  const latencyThreshold = config.custom_latency_threshold_ms || 200;
+  const isHighLatency = latency > latencyThreshold;
   const queue = result?.queue;
   const ssl = result?.ssl;
   const metrics = result?.system_metrics;
@@ -252,7 +254,7 @@ export const ServiceCard: React.FC<ServiceCardProps> = ({ config, result, viewMo
                 <Server className="w-3 h-3 text-slate-400" />
                 <span>Latency</span>
               </span>
-              <span className={`font-mono text-xs font-bold ${latency > 200 ? 'text-amber-400' : 'text-emerald-400'}`}>
+              <span className={`font-mono text-xs font-bold ${isHighLatency ? 'text-amber-400' : 'text-emerald-400'}`}>
                 {latency > 0 ? `${latency} ms` : '--'}
               </span>
             </div>
@@ -262,15 +264,15 @@ export const ServiceCard: React.FC<ServiceCardProps> = ({ config, result, viewMo
               <svg viewBox={`0 0 ${svgWidth} ${svgHeight}`} className="w-full h-full overflow-visible">
                 <defs>
                   <linearGradient id={`sparkline-grad-${config.id}`} x1="0" y1="0" x2="0" y2="1">
-                    <stop offset="0%" stopColor={latency > 200 ? '#f59e0b' : '#10b981'} stopOpacity="0.3" />
-                    <stop offset="100%" stopColor={latency > 200 ? '#f59e0b' : '#10b981'} stopOpacity="0.0" />
+                    <stop offset="0%" stopColor={isHighLatency ? '#f59e0b' : '#10b981'} stopOpacity="0.3" />
+                    <stop offset="100%" stopColor={isHighLatency ? '#f59e0b' : '#10b981'} stopOpacity="0.0" />
                   </linearGradient>
                 </defs>
                 <path d={areaD} fill={`url(#sparkline-grad-${config.id})`} />
                 <path
                   d={pathD}
                   fill="none"
-                  stroke={latency > 200 ? '#f59e0b' : '#10b981'}
+                  stroke={isHighLatency ? '#f59e0b' : '#10b981'}
                   strokeWidth="1.5"
                   strokeLinecap="round"
                   strokeLinejoin="round"

@@ -7,20 +7,24 @@ import {
   Upload, 
   LogOut, 
   FileText,
-  ChevronDown
+  ChevronDown,
+  LayoutGrid,
+  Users,
+  Settings
 } from 'lucide-react';
 import { useAuth } from '../hooks/useAuth';
 import { useHealth } from '../hooks/useHealth';
+import type { NavTab } from '../types';
 
 interface HeaderProps {
+  activeTab: NavTab;
+  onChangeTab: (tab: NavTab) => void;
   onOpenAuditLog?: () => void;
 }
 
-export const Header: React.FC<HeaderProps> = ({ onOpenAuditLog }) => {
+export const Header: React.FC<HeaderProps> = ({ activeTab, onChangeTab, onOpenAuditLog }) => {
   const { user, isAuthenticated, logout } = useAuth();
   const { 
-    services, 
-    results, 
     triggerPollAll, 
     openAddModal, 
     exportConfigJson,
@@ -41,20 +45,7 @@ export const Header: React.FC<HeaderProps> = ({ onOpenAuditLog }) => {
     return () => document.removeEventListener('mousedown', handleClickOutside);
   }, []);
 
-  // Fleet stats computation
-  let operationalCount = 0;
-  let degradedCount = 0;
-  let outageCount = 0;
-
-  services.forEach((s) => {
-    if (s.muted) return;
-    const status = results[s.id]?.status || 'operational';
-    if (status === 'operational') operationalCount++;
-    else if (status === 'degraded') degradedCount++;
-    else if (status === 'outage') outageCount++;
-  });
-
-  const overallHealthy = outageCount === 0 && degradedCount === 0;
+  // Header state
 
   const handleFileUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
@@ -75,9 +66,9 @@ export const Header: React.FC<HeaderProps> = ({ onOpenAuditLog }) => {
     <header className="w-full bg-[#030712]/95 border-b border-slate-800/80 sticky top-0 z-30 backdrop-blur-md">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 h-14 flex items-center justify-between select-none">
         
-        {/* Brand & Global Fleet Status */}
-        <div className="flex items-center space-x-4">
-          <div className="flex items-center space-x-2.5">
+        {/* Brand Identity & Navigation Tabs */}
+        <div className="flex items-center space-x-6">
+          <div className="flex items-center space-x-2.5 cursor-pointer" onClick={() => onChangeTab('dashboard')}>
             <div className="w-7 h-7 rounded-lg bg-slate-900 border border-slate-700/60 flex items-center justify-center text-emerald-400 shadow-[0_0_12px_rgba(16,185,129,0.2)]">
               <Shield className="w-4 h-4" />
             </div>
@@ -86,40 +77,53 @@ export const Header: React.FC<HeaderProps> = ({ onOpenAuditLog }) => {
             </span>
           </div>
 
-          <div className="h-4 w-px bg-slate-800 hidden sm:block" />
+          <div className="h-4 w-px bg-slate-800 hidden md:block" />
 
-          {/* Minimalist Fleet Status Pulse */}
-          <div className="hidden sm:flex items-center space-x-2 px-2.5 py-1 rounded-full bg-slate-950/80 border border-slate-800 text-xs font-semibold">
-            {overallHealthy ? (
-              <>
-                <span className="w-2 h-2 rounded-full bg-emerald-400 animate-pulse glow-dot-emerald" />
-                <span className="text-slate-300 font-mono text-[11px]">
-                  {operationalCount}/{services.length} Fleet Nominal
-                </span>
-              </>
-            ) : outageCount > 0 ? (
-              <>
-                <span className="w-2 h-2 rounded-full bg-rose-400 animate-pulse glow-dot-rose" />
-                <span className="text-rose-400 font-mono text-[11px]">
-                  {outageCount} Outage Alert
-                </span>
-              </>
-            ) : (
-              <>
-                <span className="w-2 h-2 rounded-full bg-amber-400 animate-pulse glow-dot-amber" />
-                <span className="text-amber-400 font-mono text-[11px]">
-                  {degradedCount} Degraded Alert
-                </span>
-              </>
-            )}
-          </div>
+          {/* Navigation Links Menu */}
+          <nav className="flex items-center space-x-1">
+            <button
+              onClick={() => onChangeTab('dashboard')}
+              className={`px-3 py-1.5 rounded-lg text-xs font-bold transition-all flex items-center space-x-1.5 cursor-pointer ${
+                activeTab === 'dashboard'
+                  ? 'bg-slate-800 text-emerald-400 border border-slate-700/60 shadow-sm'
+                  : 'text-slate-400 hover:text-slate-200'
+              }`}
+            >
+              <LayoutGrid className="w-3.5 h-3.5" />
+              <span>Dashboard</span>
+            </button>
+
+            <button
+              onClick={() => onChangeTab('users')}
+              className={`px-3 py-1.5 rounded-lg text-xs font-bold transition-all flex items-center space-x-1.5 cursor-pointer ${
+                activeTab === 'users'
+                  ? 'bg-slate-800 text-emerald-400 border border-slate-700/60 shadow-sm'
+                  : 'text-slate-400 hover:text-slate-200'
+              }`}
+            >
+              <Users className="w-3.5 h-3.5" />
+              <span>Users</span>
+            </button>
+
+            <button
+              onClick={() => onChangeTab('settings')}
+              className={`px-3 py-1.5 rounded-lg text-xs font-bold transition-all flex items-center space-x-1.5 cursor-pointer ${
+                activeTab === 'settings'
+                  ? 'bg-slate-800 text-emerald-400 border border-slate-700/60 shadow-sm'
+                  : 'text-slate-400 hover:text-slate-200'
+              }`}
+            >
+              <Settings className="w-3.5 h-3.5" />
+              <span>Settings</span>
+            </button>
+          </nav>
         </div>
 
         {/* Action Toolbar & User Profile */}
         <div className="flex items-center space-x-2">
           
-          {/* Primary Action Button */}
-          {user?.role !== 'viewer' && (
+          {/* Primary Action Button (Only on Dashboard) */}
+          {activeTab === 'dashboard' && user?.role !== 'viewer' && (
             <button
               onClick={() => openAddModal()}
               className="flex items-center space-x-1.5 px-3 py-1.5 rounded-lg bg-emerald-600 hover:bg-emerald-500 text-white text-xs font-bold transition-all shadow-[0_0_12px_rgba(16,185,129,0.25)] active:scale-95 cursor-pointer border border-emerald-500/50"

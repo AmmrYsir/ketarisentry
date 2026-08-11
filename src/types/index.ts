@@ -96,14 +96,19 @@ export interface Incident {
   timestamp: string;
 }
 
+export type NavTab = 'dashboard' | 'users' | 'settings';
+
 export interface AuthUser {
   id: string;
   name: string;
   email: string;
   avatar?: string;
   role: UserRole;
+  active?: boolean;
   email_verified?: boolean;
   is_sandbox?: boolean;
+  created_at?: string;
+  last_login?: string;
 }
 
 export interface AuditLogEntry {
@@ -114,3 +119,4 @@ export interface AuditLogEntry {
   details: string;
   timestamp: string;
 }
+

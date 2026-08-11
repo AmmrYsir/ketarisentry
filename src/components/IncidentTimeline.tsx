@@ -1,10 +1,18 @@
-import React from 'react';
-import { Activity, CheckCircle2, AlertTriangle, XCircle, Clock } from 'lucide-react';
+import React, { useState } from 'react';
+import { Activity, CheckCircle2, AlertTriangle, XCircle, Clock, ChevronRight } from 'lucide-react';
 import { useHealth } from '../hooks/useHealth';
 import type { HealthStatus, Incident } from '../types';
+import { IncidentDetailModal } from './IncidentDetailModal';
 
 export const IncidentTimeline: React.FC = () => {
   const { incidents } = useHealth();
+  const [selectedIncident, setSelectedIncident] = useState<Incident | null>(null);
+  const [isModalOpen, setIsModalOpen] = useState(false);
+
+  const handleOpenDetail = (incident: Incident) => {
+    setSelectedIncident(incident);
+    setIsModalOpen(true);
+  };
 
   const getStatusIcon = (status: HealthStatus) => {
     switch (status) {
@@ -38,6 +46,7 @@ export const IncidentTimeline: React.FC = () => {
 
   return (
     <div className="rounded-2xl p-5 linear-card select-none">
+      
       {/* Timeline Header */}
       <div className="flex items-center justify-between border-b border-slate-800/80 pb-3.5 mb-4">
         <div className="flex items-center space-x-2.5">
@@ -46,7 +55,7 @@ export const IncidentTimeline: React.FC = () => {
           </div>
           <div>
             <h3 className="text-sm font-bold text-slate-100">Incident & Health Event Log</h3>
-            <p className="text-xs text-slate-400">Chronological telemetry transitions & alerts</p>
+            <p className="text-xs text-slate-400">Click any incident log item to inspect full trace</p>
           </div>
         </div>
       </div>
@@ -58,20 +67,26 @@ export const IncidentTimeline: React.FC = () => {
           <p className="text-[11px] text-slate-500 mt-1 font-mono">System telemetry is stable across all endpoints.</p>
         </div>
       ) : (
-        <div className="space-y-2.5 max-h-72 overflow-y-auto pr-1">
+        <div className="space-y-2.5 max-h-[calc(100vh-16rem)] overflow-y-auto pr-1">
           {incidents.map((log: Incident) => (
             <div
               key={log.id}
-              className={`p-3 rounded-xl linear-well border-l-4 ${getStatusBorder(log.new_status)} flex items-center justify-between gap-3 text-xs`}
+              onClick={() => handleOpenDetail(log)}
+              className={`p-3 rounded-xl linear-well border-l-4 ${getStatusBorder(log.new_status)} flex items-center justify-between gap-3 text-xs cursor-pointer hover:bg-slate-900/80 hover:border-slate-700 transition-all group`}
+              title="Click to inspect full incident log details"
             >
               <div className="flex items-center space-x-3 truncate">
                 {getStatusIcon(log.new_status)}
                 <div className="truncate">
-                  <span className="font-bold text-slate-200">{log.service_name}</span>
-                  <span className="text-slate-400 font-medium"> transitioned from </span>
-                  <span className="font-mono font-bold uppercase text-slate-400">{log.previous_status}</span>
-                  <span className="text-slate-400 font-medium"> to </span>
-                  <span className="font-mono font-bold capitalize text-slate-100">{log.new_status}</span>
+                  <div className="flex items-center space-x-1.5">
+                    <span className="font-bold text-slate-200 group-hover:text-emerald-400 transition-colors">{log.service_name}</span>
+                    <ChevronRight className="w-3 h-3 text-slate-500 group-hover:text-emerald-400 transition-colors opacity-0 group-hover:opacity-100" />
+                  </div>
+                  <div className="text-[11px] text-slate-400 font-medium">
+                    <span className="font-mono uppercase font-bold text-slate-400">{log.previous_status}</span>
+                    <span> ➔ </span>
+                    <span className="font-mono font-bold capitalize text-slate-100">{log.new_status}</span>
+                  </div>
                   {log.reason && (
                     <p className="text-slate-400 text-[11px] truncate mt-0.5 font-mono">{log.reason}</p>
                   )}
@@ -85,6 +100,13 @@ export const IncidentTimeline: React.FC = () => {
           ))}
         </div>
       )}
+
+      {/* Incident Detail Modal */}
+      <IncidentDetailModal
+        isOpen={isModalOpen}
+        onClose={() => setIsModalOpen(false)}
+        incident={selectedIncident}
+      />
     </div>
   );
 };

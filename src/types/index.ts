@@ -96,7 +96,7 @@ export interface Incident {
   timestamp: string;
 }
 
-export type NavTab = 'dashboard' | 'users' | 'settings';
+export type NavTab = 'dashboard' | 'users' | 'settings' | 'profile';
 
 export interface AuthUser {
   id: string;

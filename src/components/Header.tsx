@@ -10,7 +10,8 @@ import {
   ChevronDown,
   LayoutGrid,
   Users,
-  Settings
+  Settings,
+  User as UserIcon
 } from 'lucide-react';
 import { useAuth } from '../hooks/useAuth';
 import { useHealth } from '../hooks/useHealth';
@@ -44,8 +45,6 @@ export const Header: React.FC<HeaderProps> = ({ activeTab, onChangeTab, onOpenAu
     document.addEventListener('mousedown', handleClickOutside);
     return () => document.removeEventListener('mousedown', handleClickOutside);
   }, []);
-
-  // Header state
 
   const handleFileUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
@@ -115,6 +114,18 @@ export const Header: React.FC<HeaderProps> = ({ activeTab, onChangeTab, onOpenAu
             >
               <Settings className="w-3.5 h-3.5" />
               <span>Settings</span>
+            </button>
+
+            <button
+              onClick={() => onChangeTab('profile')}
+              className={`px-3 py-1.5 rounded-lg text-xs font-bold transition-all flex items-center space-x-1.5 cursor-pointer ${
+                activeTab === 'profile'
+                  ? 'bg-slate-800 text-emerald-400 border border-slate-700/60 shadow-sm'
+                  : 'text-slate-400 hover:text-slate-200'
+              }`}
+            >
+              <UserIcon className="w-3.5 h-3.5" />
+              <span>Profile</span>
             </button>
           </nav>
         </div>
@@ -202,9 +213,21 @@ export const Header: React.FC<HeaderProps> = ({ activeTab, onChangeTab, onOpenAu
                     <p className="text-xs font-bold text-slate-200 truncate">{user?.name}</p>
                     <p className="text-[10px] text-slate-400 font-mono capitalize">Role: {user?.role}</p>
                   </div>
+
+                  <button
+                    onClick={() => {
+                      onChangeTab('profile');
+                      setIsMenuOpen(false);
+                    }}
+                    className="w-full px-3.5 py-2 text-xs text-slate-200 hover:bg-slate-800/80 flex items-center space-x-2 transition-colors cursor-pointer text-left font-semibold"
+                  >
+                    <UserIcon className="w-3.5 h-3.5 text-emerald-400" />
+                    <span>My Profile</span>
+                  </button>
+
                   <button
                     onClick={logout}
-                    className="w-full px-3.5 py-2 text-xs text-rose-400 hover:bg-rose-950/40 flex items-center space-x-2 transition-colors cursor-pointer text-left font-semibold"
+                    className="w-full px-3.5 py-2 text-xs text-rose-400 hover:bg-rose-950/40 flex items-center space-x-2 transition-colors cursor-pointer text-left font-semibold border-t border-slate-800/80"
                   >
                     <LogOut className="w-3.5 h-3.5" />
                     <span>Sign Out</span>

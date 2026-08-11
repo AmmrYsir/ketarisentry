@@ -138,6 +138,13 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
     }
   };
 
+  const updateUserProfile = (updates: Partial<AuthUser>) => {
+    if (user) {
+      const updated = { ...user, ...updates };
+      saveUserToState(updated);
+    }
+  };
+
   return (
     <AuthContext.Provider
       value={{
@@ -153,6 +160,7 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
         loginWithMagicLink,
         logout,
         setUserRole,
+        updateUserProfile,
       }}
     >
       {children}

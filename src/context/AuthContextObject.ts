@@ -14,6 +14,7 @@ export interface AuthContextType {
   loginWithMagicLink: (email: string) => Promise<{ success: boolean; error?: string }>;
   logout: () => void;
   setUserRole: (role: UserRole) => void;
+  updateUserProfile: (updates: Partial<AuthUser>) => void;
 }
 
 export const AuthContext = createContext<AuthContextType | undefined>(undefined);

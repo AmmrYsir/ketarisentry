@@ -12,6 +12,7 @@ import { AuditLogModal } from './components/AuditLogModal';
 import { IncidentTimeline } from './components/IncidentTimeline';
 import { UserManagement } from './components/UserManagement';
 import { SettingsPage } from './components/SettingsPage';
+import { ProfilePage } from './components/ProfilePage';
 import { CustomSelect } from './components/CustomSelect';
 import { 
   Search, 
@@ -107,6 +108,8 @@ const DashboardContent: React.FC<{
           <UserManagement />
         ) : activeTab === 'settings' ? (
           <SettingsPage />
+        ) : activeTab === 'profile' ? (
+          <ProfilePage />
         ) : (
           /* DASHBOARD VIEW */
           <div className="space-y-6">

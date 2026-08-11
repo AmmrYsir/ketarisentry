@@ -25,17 +25,17 @@ export const SettingsPage: React.FC = () => {
   const [defaultTimeout, setDefaultTimeout] = useState<number>(5);
 
   // Security Headers
-  const [globalSecretKey, setGlobalSecretKey] = useState<string>('sk_live_ketari_99812a');
+  const [globalSecretKey, setGlobalSecretKey] = useState<string>('');
 
   // SMTP Email Configuration
-  const [smtpHost, setSmtpHost] = useState<string>('smtp.mailtrap.io');
-  const [smtpPort, setSmtpPort] = useState<number>(587);
+  const [smtpHost, setSmtpHost] = useState<string>('');
+  const [smtpPort, setSmtpPort] = useState<string | number>('');
   const [smtpEncryption, setSmtpEncryption] = useState<string>('tls');
-  const [smtpUsername, setSmtpUsername] = useState<string>('ketari_smtp_user');
-  const [smtpPassword, setSmtpPassword] = useState<string>('••••••••••••••••');
-  const [fromEmail, setFromEmail] = useState<string>('alerts@ketarisentry.io');
-  const [fromName, setFromName] = useState<string>('Ketarisentry Alert Bot');
-  const [alertRecipientEmail, setAlertRecipientEmail] = useState<string>('oncall@ketarisentry.io');
+  const [smtpUsername, setSmtpUsername] = useState<string>('');
+  const [smtpPassword, setSmtpPassword] = useState<string>('');
+  const [fromEmail, setFromEmail] = useState<string>('');
+  const [fromName, setFromName] = useState<string>('');
+  const [alertRecipientEmail, setAlertRecipientEmail] = useState<string>('');
   const [enableEmailAlerts, setEnableEmailAlerts] = useState<boolean>(true);
 
   // Alert Thresholds & Sensitivity
@@ -225,7 +225,7 @@ export const SettingsPage: React.FC = () => {
               <input
                 type="number"
                 value={smtpPort}
-                onChange={(e) => setSmtpPort(Number(e.target.value))}
+                onChange={(e) => setSmtpPort(e.target.value)}
                 placeholder="587"
                 className="w-full px-3 py-2 rounded-xl bg-slate-950/90 border border-slate-800 text-xs font-mono text-slate-100 focus:outline-none focus:border-emerald-500 transition-all"
               />

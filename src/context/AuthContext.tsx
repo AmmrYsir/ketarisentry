@@ -3,6 +3,7 @@ import type { ReactNode } from 'react';
 import type { AuthUser, UserRole } from '../types';
 import { syncUserLoginWithApi } from '../services/apiClient';
 import { AuthContext } from './AuthContextObject';
+import { generateInitialsSvgDataUrl } from '../utils/avatar';
 
 const LOCAL_STORAGE_KEY = 'ketarisentry_auth_user';
 
@@ -35,11 +36,13 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
       return;
     }
 
+    const name = role === 'superadmin' ? 'System Superadmin' : role === 'admin' ? 'Ammar (Admin)' : role === 'operator' ? 'Marcus (Operator)' : 'Elena (Viewer)';
+
     const demoUser: AuthUser = {
       id: 'usr_sandbox_superadmin',
-      name: 'System Superadmin',
+      name,
       email: 'superadmin@ketarisentry.io',
-      avatar: 'https://api.dicebear.com/7.x/bottts/svg?seed=Superadmin',
+      avatar: generateInitialsSvgDataUrl(name, role),
       role,
       email_verified: true,
       is_sandbox: true,

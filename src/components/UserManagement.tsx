@@ -14,13 +14,14 @@ import {
 import type { AuthUser, UserRole } from '../types';
 import { CustomSelect } from './CustomSelect';
 import { useAuth } from '../hooks/useAuth';
+import { generateInitialsSvgDataUrl } from '../utils/avatar';
 
 const INITIAL_USERS: AuthUser[] = [
   {
     id: 'usr_1',
     name: 'Ammar Yasir (You)',
     email: 'ammar@ketarisentry.io',
-    avatar: 'https://api.dicebear.com/7.x/bottts/svg?seed=Ammar',
+    avatar: generateInitialsSvgDataUrl('Ammar Yasir', 'superadmin'),
     role: 'superadmin',
     active: true,
     created_at: '2026-01-15T08:30:00Z',
@@ -30,7 +31,7 @@ const INITIAL_USERS: AuthUser[] = [
     id: 'usr_2',
     name: 'Sarah Jenkins',
     email: 'sarah.devops@ketarisentry.io',
-    avatar: 'https://api.dicebear.com/7.x/bottts/svg?seed=Sarah',
+    avatar: generateInitialsSvgDataUrl('Sarah Jenkins', 'admin'),
     role: 'admin',
     active: true,
     created_at: '2026-02-01T10:15:00Z',
@@ -40,7 +41,7 @@ const INITIAL_USERS: AuthUser[] = [
     id: 'usr_3',
     name: 'Marcus Chen',
     email: 'marcus.ops@ketarisentry.io',
-    avatar: 'https://api.dicebear.com/7.x/bottts/svg?seed=Marcus',
+    avatar: generateInitialsSvgDataUrl('Marcus Chen', 'operator'),
     role: 'operator',
     active: true,
     created_at: '2026-03-10T14:20:00Z',
@@ -50,7 +51,7 @@ const INITIAL_USERS: AuthUser[] = [
     id: 'usr_4',
     name: 'Elena Rostova',
     email: 'elena.qa@ketarisentry.io',
-    avatar: 'https://api.dicebear.com/7.x/bottts/svg?seed=Elena',
+    avatar: generateInitialsSvgDataUrl('Elena Rostova', 'viewer'),
     role: 'viewer',
     active: false,
     created_at: '2026-04-05T09:00:00Z',
@@ -126,7 +127,7 @@ export const UserManagement: React.FC = () => {
         id: `usr_${Date.now()}`,
         name,
         email,
-        avatar: `https://api.dicebear.com/7.x/bottts/svg?seed=${encodeURIComponent(name)}`,
+        avatar: generateInitialsSvgDataUrl(name, role),
         role,
         active: true,
         created_at: new Date().toISOString(),

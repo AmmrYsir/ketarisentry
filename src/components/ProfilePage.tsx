@@ -12,21 +12,14 @@ import {
   Smartphone
 } from 'lucide-react';
 import { useAuth } from '../hooks/useAuth';
-
-const AVATAR_PRESETS = [
-  { name: 'Cyber Bot', url: 'https://api.dicebear.com/7.x/bottts/svg?seed=CyberBot' },
-  { name: 'Ketari Emblem', url: 'https://api.dicebear.com/7.x/bottts/svg?seed=Ketari' },
-  { name: 'Superadmin', url: 'https://api.dicebear.com/7.x/bottts/svg?seed=Superadmin' },
-  { name: 'DevOps Tech', url: 'https://api.dicebear.com/7.x/bottts/svg?seed=DevOps' },
-  { name: 'Nexus Core', url: 'https://api.dicebear.com/7.x/bottts/svg?seed=Nexus' },
-];
+import { generateInitialsSvgDataUrl } from '../utils/avatar';
 
 export const ProfilePage: React.FC = () => {
   const { user, updateUserProfile } = useAuth();
 
   const [name, setName] = useState(user?.name || '');
   const [email, setEmail] = useState(user?.email || '');
-  const [avatar, setAvatar] = useState(user?.avatar || 'https://api.dicebear.com/7.x/bottts/svg?seed=Admin');
+  const [avatar, setAvatar] = useState(user?.avatar || generateInitialsSvgDataUrl(user?.name || 'Ammar', user?.role));
   
   // Password State
   const [currentPassword, setCurrentPassword] = useState('');
@@ -185,38 +178,46 @@ export const ProfilePage: React.FC = () => {
                 />
               </label>
 
-              {/* Reset to Default */}
+              {/* Reset / Regenerate Initials Avatar */}
               <button
                 type="button"
-                onClick={() => setAvatar(`https://api.dicebear.com/7.x/bottts/svg?seed=${encodeURIComponent(name || 'User')}`)}
+                onClick={() => setAvatar(generateInitialsSvgDataUrl(name || 'User', user?.role))}
                 className="px-3 py-1.5 rounded-lg linear-btn text-slate-300 text-xs font-semibold hover:text-white cursor-pointer select-none flex items-center space-x-1"
               >
                 <RefreshCw className="w-3.5 h-3.5 text-slate-400" />
-                <span>Generate Bot Avatar</span>
+                <span>Generate Initials Badge</span>
               </button>
             </div>
 
-            {/* Quick Preset Selector */}
+            {/* Role Color Theme Presets */}
             <div className="pt-2">
               <span className="text-[10px] font-mono font-bold text-slate-400 uppercase tracking-wider block mb-2 select-none">
-                Preset Bot Avatars
+                Role Theme Badges
               </span>
               <div className="flex items-center space-x-2">
-                {AVATAR_PRESETS.map((preset) => (
-                  <button
-                    key={preset.name}
-                    type="button"
-                    onClick={() => setAvatar(preset.url)}
-                    className={`w-9 h-9 rounded-lg border overflow-hidden transition-all cursor-pointer p-0.5 ${
-                      avatar === preset.url
-                        ? 'border-emerald-500 bg-emerald-950/40 ring-1 ring-emerald-500/50'
-                        : 'border-slate-800 bg-slate-950/60 hover:border-slate-700'
-                    }`}
-                    title={preset.name}
-                  >
-                    <img src={preset.url} alt={preset.name} className="w-full h-full object-cover rounded-md" />
-                  </button>
-                ))}
+                {[
+                  { label: 'Superadmin Theme', roleTheme: 'superadmin' as const },
+                  { label: 'Admin Theme', roleTheme: 'admin' as const },
+                  { label: 'Operator Theme', roleTheme: 'operator' as const },
+                  { label: 'Viewer Theme', roleTheme: 'viewer' as const },
+                ].map((preset) => {
+                  const presetUrl = generateInitialsSvgDataUrl(name || 'User', preset.roleTheme);
+                  return (
+                    <button
+                      key={preset.roleTheme}
+                      type="button"
+                      onClick={() => setAvatar(presetUrl)}
+                      className={`w-9 h-9 rounded-lg border overflow-hidden transition-all cursor-pointer p-0.5 ${
+                        avatar === presetUrl
+                          ? 'border-emerald-500 bg-emerald-950/40 ring-1 ring-emerald-500/50'
+                          : 'border-slate-800 bg-slate-950/60 hover:border-slate-700'
+                      }`}
+                      title={preset.label}
+                    >
+                      <img src={presetUrl} alt={preset.label} className="w-full h-full object-cover rounded-md" />
+                    </button>
+                  );
+                })}
               </div>
             </div>
           </div>

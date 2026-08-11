@@ -121,7 +121,7 @@ export const SettingsPage: React.FC = () => {
       <form onSubmit={handleSaveSettings} className="space-y-6">
         
         {/* 1. Pull Polling Strategy Card */}
-        <div className="p-5 rounded-xl linear-card space-y-4">
+        <div className="relative z-40 p-5 rounded-xl linear-card space-y-4">
           <div className="flex items-center space-x-2 border-b border-slate-800/80 pb-3 select-none">
             <Sliders className="w-4 h-4 text-emerald-400" />
             <h3 className="text-xs font-bold text-slate-200 uppercase tracking-wider font-mono">
@@ -166,7 +166,7 @@ export const SettingsPage: React.FC = () => {
         </div>
 
         {/* 2. Security Headers & Keys Card */}
-        <div className="p-5 rounded-xl linear-card space-y-4">
+        <div className="relative z-30 p-5 rounded-xl linear-card space-y-4">
           <div className="flex items-center space-x-2 border-b border-slate-800/80 pb-3 select-none">
             <Shield className="w-4 h-4 text-indigo-400" />
             <h3 className="text-xs font-bold text-slate-200 uppercase tracking-wider font-mono">
@@ -195,7 +195,7 @@ export const SettingsPage: React.FC = () => {
         </div>
 
         {/* 3. SMTP Email Transport & Notification Card */}
-        <div className="p-5 rounded-xl linear-card space-y-4">
+        <div className="relative z-20 p-5 rounded-xl linear-card space-y-4">
           <div className="flex items-center justify-between border-b border-slate-800/80 pb-3 select-none">
             <div className="flex items-center space-x-2">
               <Mail className="w-4 h-4 text-sky-400" />
@@ -353,7 +353,7 @@ export const SettingsPage: React.FC = () => {
         </div>
 
         {/* 4. Incident Alert Sensitivity & Thresholds Card */}
-        <div className="p-5 rounded-xl linear-card space-y-4">
+        <div className="relative z-10 p-5 rounded-xl linear-card space-y-4">
           <div className="flex items-center space-x-2 border-b border-slate-800/80 pb-3 select-none">
             <AlertTriangle className="w-4 h-4 text-amber-400" />
             <h3 className="text-xs font-bold text-slate-200 uppercase tracking-wider font-mono">
@@ -413,7 +413,7 @@ export const SettingsPage: React.FC = () => {
         </div>
 
         {/* 5. Data Retention & Maintenance Card */}
-        <div className="p-5 rounded-xl linear-card space-y-4">
+        <div className="relative z-0 p-5 rounded-xl linear-card space-y-4">
           <div className="flex items-center justify-between border-b border-slate-800/80 pb-3 select-none">
             <div className="flex items-center space-x-2">
               <Database className="w-4 h-4 text-purple-400" />
